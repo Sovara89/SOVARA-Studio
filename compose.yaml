@@ -1,0 +1,188 @@
+services:
+  postgres:
+    image: postgres:15.8-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sovara
+      POSTGRES_PASSWORD: sovara
+      POSTGRES_DB: sovara
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./ops/postgres/01-roles.sql:/docker-entrypoint-initdb.d/01-roles.sql:ro
+    ports:
+      - '15432:5432'
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'sovara']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    ports:
+      - '16379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:5173,http://localhost:18080
+      MINIO_API_STALE_UPLOADS_CLEANUP_INTERVAL: 6h
+      MINIO_API_STALE_UPLOADS_EXPIRY: 48h
+    ports:
+      - '19000:9000'
+      - '19001:9001'
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    depends_on:
+      minio:
+        condition: service_healthy
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    restart: 'no'
+    entrypoint: >
+      /bin/sh -ec "
+      /usr/bin/mc alias set minio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb --ignore-existing minio/sovara-uploads;
+      /usr/bin/mc anonymous set none minio/sovara-uploads;
+       "
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgres://sovara_runtime:sovara_runtime@postgres:5432/sovara
+      AUTH_SECRET: local-compose-auth-secret-that-is-at-least-32-bytes
+      APP_ORIGIN: http://localhost:18080
+      CREDENTIAL_ENCRYPTION_KEYS: '{"local":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
+      CREDENTIAL_ENCRYPTION_ACTIVE_KEY_ID: local
+      YOUTUBE_CLIENT_ID:
+      YOUTUBE_CLIENT_SECRET:
+      YOUTUBE_REDIRECT_URI:
+      VK_CLIENT_ID:
+      VK_SERVICE_TOKEN:
+      VK_REDIRECT_URI:
+      S3_ENDPOINT: http://minio:9000
+      S3_PRESIGN_ENDPOINT: http://localhost:19000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_FORCE_PATH_STYLE: 'true'
+      S3_BUCKET: sovara-uploads
+      S3_PRESIGNED_PART_TTL_SECONDS: '900'
+      S3_MULTIPART_UPLOAD_TTL_SECONDS: '86400'
+      UPLOAD_ALLOWED_EXTENSIONS: mp4,mov,m4v,webm,mkv,avi
+      UPLOAD_ALLOWED_CONTENT_TYPES: video/mp4,video/quicktime,video/webm,video/x-matroska,video/x-msvideo,application/octet-stream
+      UPLOAD_MAX_SIZE_BYTES: '107374182400'
+      UPLOAD_MIN_PART_SIZE_BYTES: '5242880'
+      UPLOAD_PREFERRED_PART_SIZE_BYTES: '67108864'
+      UPLOAD_TARGET_MAX_PARTS: '1000'
+      UPLOAD_SIGN_BATCH_MAX: '16'
+      UPLOAD_MAX_CONCURRENCY: '6'
+      UPLOAD_SIGN_RATE_LIMIT_PER_MINUTE: '120'
+      S3_CONTROL_REQUEST_TIMEOUT_MS: '30000'
+      UPLOAD_COMPLETION_AMBIGUITY_GRACE_MS: '60000'
+      API_PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    ports:
+      - '13000:3000'
+    expose:
+      - '3000'
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      DATABASE_URL: postgres://sovara_runtime:sovara_runtime@postgres:5432/sovara
+      REDIS_URL: redis://redis:6379
+      CREDENTIAL_ENCRYPTION_KEYS: '{"local":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
+      CREDENTIAL_ENCRYPTION_ACTIVE_KEY_ID: local
+      YOUTUBE_CLIENT_ID:
+      YOUTUBE_CLIENT_SECRET:
+      YOUTUBE_REDIRECT_URI:
+      VK_CLIENT_ID:
+      VK_SERVICE_TOKEN:
+      VK_REDIRECT_URI:
+      VK_GROUP_ID:
+      VK_CAPABILITY_TIMEOUT_MS: '10000'
+      VK_SAVE_TIMEOUT_MS: '15000'
+      VK_GET_TIMEOUT_MS: '15000'
+      VK_DNS_TIMEOUT_MS: '5000'
+      VK_UPLOAD_TIMEOUT_MS: '21600000'
+      VK_RESPONSE_READ_TIMEOUT_MS: '15000'
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_BUCKET: sovara-uploads
+      S3_FORCE_PATH_STYLE: 'true'
+      WORKER_PORT: 3001
+      PUBLICATION_QUEUE_NAME: sovara-publications
+      BULLMQ_PREFIX: sovara-studio
+      PUBLICATION_WORKER_CONCURRENCY: '2'
+      PUBLICATION_JOB_ATTEMPTS: '5'
+      PUBLICATION_JOB_BACKOFF_MS: '5000'
+      PUBLICATION_LEASE_MS: '120000'
+      PUBLICATION_LEASE_HEARTBEAT_MS: '30000'
+      PUBLICATION_RECONCILE_INTERVAL_MS: '30000'
+      PUBLICATION_RECONCILE_BATCH_SIZE: '100'
+      WORKER_STARTUP_TIMEOUT_MS: '15000'
+      WORKER_SHUTDOWN_TIMEOUT_MS: '30000'
+      PUBLICATION_COMPLETED_RETENTION_SECONDS: '3600'
+      PUBLICATION_FAILED_RETENTION_SECONDS: '604800'
+      YOUTUBE_UPLOAD_CHUNK_BYTES: '8388608'
+      YOUTUBE_MAX_STATUS_PROBES: '3'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '13001:3001'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3001/ready').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    depends_on:
+      - api
+    ports:
+      - '18080:80'
+
+volumes:
+  postgres_data:
+    name: sovara-studio-postgres-data
+  minio_data:
+    name: sovara-studio-minio-data

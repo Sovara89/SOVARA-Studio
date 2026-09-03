@@ -1,0 +1,4 @@
+ALTER TABLE "multipart_upload" DROP CONSTRAINT "multipart_upload_state_check";--> statement-breakpoint
+DROP INDEX "multipart_upload_unresolved_video_uidx";--> statement-breakpoint
+CREATE UNIQUE INDEX "multipart_upload_unresolved_video_uidx" ON "multipart_upload" USING btree ("video_id") WHERE "multipart_upload"."state" IN ('initiating', 'initiation_reconciling', 'active', 'completing', 'abort_pending', 'failed');--> statement-breakpoint
+ALTER TABLE "multipart_upload" ADD CONSTRAINT "multipart_upload_state_check" CHECK ("multipart_upload"."state" IN ('initiating', 'initiation_reconciling', 'active', 'completing', 'completed', 'abort_pending', 'aborted', 'expired', 'failed'));

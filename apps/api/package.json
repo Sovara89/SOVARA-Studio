@@ -1,0 +1,29 @@
+{
+  "name": "@sovara-studio/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fastify": "^4.27.0",
+    "better-auth": "1.7.2",
+    "@better-auth/drizzle-adapter": "1.7.2",
+    "@better-auth/utils": "0.4.2",
+    "@sovara-studio/db": "workspace:*",
+    "@sovara-studio/infra": "workspace:*",
+    "@sovara-studio/platforms": "workspace:*",
+    "@sovara-studio/contracts": "workspace:*",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

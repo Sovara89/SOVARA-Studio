@@ -1,0 +1,4 @@
+ALTER TABLE "publication" ADD CONSTRAINT "publication_remote_owner_id_check" CHECK ("publication"."remote_owner_id" IS NULL OR length(trim("publication"."remote_owner_id")) > 0);--> statement-breakpoint
+ALTER TABLE "publication" ADD CONSTRAINT "publication_remote_media_id_check" CHECK ("publication"."remote_media_id" IS NULL OR length(trim("publication"."remote_media_id")) > 0);--> statement-breakpoint
+ALTER TABLE "publication_attempt" ADD CONSTRAINT "publication_attempt_remote_owner_id_check" CHECK ("publication_attempt"."remote_owner_id" IS NULL OR length(trim("publication_attempt"."remote_owner_id")) > 0);--> statement-breakpoint
+ALTER TABLE "publication_attempt" ADD CONSTRAINT "publication_attempt_remote_media_id_check" CHECK ("publication_attempt"."remote_media_id" IS NULL OR length(trim("publication_attempt"."remote_media_id")) > 0);
