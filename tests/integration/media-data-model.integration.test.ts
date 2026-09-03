@@ -486,6 +486,32 @@ describe('TASK-004 media data model', () => {
       },
     );
     expect(failedYoutube.publication.state).toBe('failed');
+    expect(
+      await publicationRepository.retryFailedPublication(
+        otherUserId,
+        youtube.id,
+        failedYoutube.publication.revision,
+      ),
+    ).toHaveLength(0);
+    const [manuallyRetried] = await publicationRepository.retryFailedPublication(
+      ownerId,
+      youtube.id,
+      failedYoutube.publication.revision,
+    );
+    expect(manuallyRetried).toMatchObject({
+      state: 'queued',
+      attemptCount: 1,
+      retryCycleAttemptCount: 0,
+      failureCode: null,
+      revision: failedYoutube.publication.revision + 1,
+    });
+    expect(
+      await publicationRepository.retryFailedPublication(
+        ownerId,
+        youtube.id,
+        failedYoutube.publication.revision,
+      ),
+    ).toHaveLength(0);
     expect((await publicationRepository.findByIdForUser(ownerId, vk.id))[0]?.state).toBe('queued');
     expect(await publicationRepository.listAttemptsForUser(ownerId, youtube.id)).toHaveLength(1);
 

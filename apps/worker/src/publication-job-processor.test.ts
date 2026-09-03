@@ -9,6 +9,10 @@ const publication = {
   state: 'queued' as const,
   platform: 'youtube' as const,
   nextAttemptAt: null,
+  attemptCount: 1,
+  retryCycleAttemptCount: 1,
+  retryCycleStartedAt: new Date(0),
+  createdAt: new Date(0),
 };
 
 function job() {

@@ -1,7 +1,7 @@
 import type { createPublicationRepository } from '@sovara-studio/db';
 import type { PublicationPlatform } from '@sovara-studio/db';
 import type { createPublicationQueue } from '@sovara-studio/infra';
-import { publicationJobId } from '@sovara-studio/infra';
+import { publicationJobId, safeErrorFields } from '@sovara-studio/infra';
 import type { PublicationPublisher } from '@sovara-studio/platforms';
 
 type PublicationRepository = ReturnType<typeof createPublicationRepository>;
@@ -120,9 +120,7 @@ export function createPublicationReconciler(dependencies: PublicationReconcilerD
       await reconcileOnce();
       if (stopped()) return;
       timer = setInterval(() => {
-        void reconcileOnce().catch((error) =>
-          log('reconciliation_failed', { error: String(error) }),
-        );
+        void reconcileOnce().catch((error) => log('reconciliation_failed', safeErrorFields(error)));
       }, dependencies.intervalMs);
     },
     close: async () => {

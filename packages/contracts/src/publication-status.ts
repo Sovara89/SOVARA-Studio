@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { publicationIntentPlatformSchema } from './publication-intents.js';
 
+export const publicationStatusParamsSchema = z
+  .object({ publicationId: z.string().uuid() })
+  .strict();
+export const retryPublicationRequestSchema = z
+  .object({ revision: z.number().int().nonnegative() })
+  .strict();
+
 export const publicationStatusResponseSchema = z.object({
   id: z.string().uuid(),
   videoId: z.string().uuid(),
@@ -17,6 +24,7 @@ export const publicationStatusResponseSchema = z.object({
     'cancelled',
   ]),
   attemptCount: z.number().int().nonnegative(),
+  revision: z.number().int().nonnegative(),
   nextAttemptAt: z.string().nullable(),
   publishedAt: z.string().nullable(),
   result: z

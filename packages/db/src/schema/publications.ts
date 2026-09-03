@@ -58,6 +58,10 @@ export const publication = pgTable(
       .default(sql`'{}'::jsonb`)
       .notNull(),
     attemptCount: integer('attempt_count').default(0).notNull(),
+    retryCycleAttemptCount: integer('retry_cycle_attempt_count').default(0).notNull(),
+    retryCycleStartedAt: timestamp('retry_cycle_started_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
     lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }),
     nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
     leaseToken: uuid('lease_token'),
@@ -111,6 +115,7 @@ export const publication = pgTable(
     check('publication_title_check', sql`length(trim(${table.title})) > 0`),
     check('publication_metadata_version_check', sql`${table.metadataVersion} > 0`),
     check('publication_attempt_count_check', sql`${table.attemptCount} >= 0`),
+    check('publication_retry_cycle_attempt_count_check', sql`${table.retryCycleAttemptCount} >= 0`),
     check('publication_revision_check', sql`${table.revision} >= 0`),
     check(
       'publication_lease_pair_check',

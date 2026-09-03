@@ -3,13 +3,19 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import '../../test/setup';
 import { PublicationComposer, vkMetadataLinkForSave } from './PublicationComposer';
-import { createIntent, listAccounts, listPublicationStatus } from './publication-api';
+import {
+  createIntent,
+  listAccounts,
+  listPublicationStatus,
+  retryPublication,
+} from './publication-api';
 
 vi.mock('./publication-api', () => ({
   createIntent: vi.fn(),
   listAccounts: vi.fn(),
   listPublicationStatus: vi.fn(),
   removePreview: vi.fn(),
+  retryPublication: vi.fn(),
   uploadPreview: vi.fn(),
 }));
 
@@ -74,5 +80,29 @@ describe('PublicationComposer VK metadata link', () => {
 
   test('maps blank-only link input to a persisted clear', () => {
     expect(vkMetadataLinkForSave('  ')).toBeNull();
+  });
+
+  test('offers an explicit revision-bound retry only for FAILED publication', async () => {
+    const failed = {
+      id: '6c4f8e30-e24e-4cde-9534-a43f4b3f98e8',
+      videoId: intent.videoId,
+      platform: 'youtube' as const,
+      publishingAccountId: intent.publishingAccountId,
+      state: 'failed' as const,
+      attemptCount: 2,
+      revision: 7,
+      nextAttemptAt: null,
+      publishedAt: null,
+      result: null,
+      error: { code: 'PROVIDER_REJECTED', message: 'Publication failed.', retryable: true },
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    vi.mocked(listPublicationStatus).mockResolvedValue([failed]);
+    vi.mocked(retryPublication).mockResolvedValue({ ...failed, state: 'queued', revision: 8 });
+    render(<PublicationComposer />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry publication' }));
+    await waitFor(() => expect(retryPublication).toHaveBeenCalledWith(failed.id, 7));
+    expect(screen.getByText('Publication retry queued.')).toBeInTheDocument();
   });
 });

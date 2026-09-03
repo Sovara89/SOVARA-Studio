@@ -6,6 +6,7 @@ import {
   listAccounts,
   listPublicationStatus,
   removePreview,
+  retryPublication,
   uploadPreview,
 } from './publication-api';
 
@@ -99,6 +100,16 @@ export function PublicationComposer() {
       setMessage('Preview removed.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not remove preview.');
+    }
+  };
+  const retryFailedPublication = async (status: PublicationStatusResponse) => {
+    try {
+      setMessage('');
+      const retried = await retryPublication(status.id, status.revision);
+      setStatuses((current) => current.map((item) => (item.id === retried.id ? retried : item)));
+      setMessage('Publication retry queued.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not retry publication.');
     }
   };
   return (
@@ -234,6 +245,11 @@ export function PublicationComposer() {
                       status.result.remoteMediaId
                     )}
                   </span>
+                )}
+                {status.state === 'failed' && (
+                  <button type="button" onClick={() => void retryFailedPublication(status)}>
+                    Retry publication
+                  </button>
                 )}
               </li>
             ))}

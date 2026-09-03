@@ -199,6 +199,34 @@ export function createPublicationRepository(db: Database) {
         .where(and(eq(publication.id, id), eq(publication.userId, userId)))
         .limit(1),
 
+    retryFailedPublication: (userId: string, id: string, expectedRevision: number) =>
+      db
+        .update(publication)
+        .set({
+          state: 'queued',
+          retryCycleAttemptCount: 0,
+          retryCycleStartedAt: new Date(),
+          nextAttemptAt: null,
+          reconciliationRequiredAt: null,
+          failureClass: null,
+          failureCode: null,
+          failureMessage: null,
+          leaseToken: null,
+          leaseExpiresAt: null,
+          revision: expectedRevision + 1,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(publication.id, id),
+            eq(publication.userId, userId),
+            eq(publication.state, 'failed'),
+            eq(publication.revision, expectedRevision),
+            isNull(publication.remoteMediaId),
+          ),
+        )
+        .returning(),
+
     findById: (id: string) => db.select().from(publication).where(eq(publication.id, id)).limit(1),
 
     listQueueCandidates: (input: PublicationQueueCandidateQuery) => {
@@ -435,6 +463,7 @@ export function createPublicationRepository(db: Database) {
           .set({
             state: 'publishing',
             attemptCount: sql`${publication.attemptCount} + 1`,
+            retryCycleAttemptCount: sql`${publication.retryCycleAttemptCount} + 1`,
             lastAttemptAt: now,
             leaseToken,
             leaseExpiresAt: new Date(now.getTime() + leaseDurationMs),

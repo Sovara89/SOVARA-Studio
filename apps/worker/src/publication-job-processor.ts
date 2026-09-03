@@ -156,8 +156,8 @@ export function createPublicationJobProcessor(
         ? calculateRetryAt(
             {
               attemptId: attempt.id,
-              attemptCount: publication.attemptCount,
-              createdAt: publication.createdAt,
+              attemptCount: publication.retryCycleAttemptCount,
+              createdAt: publication.retryCycleStartedAt,
               now: now(),
             },
             retryPolicy,
@@ -218,8 +218,8 @@ export function createPublicationJobProcessor(
         ? calculateRetryAt(
             {
               attemptId: attempt.id,
-              attemptCount: publication.attemptCount,
-              createdAt: publication.createdAt,
+              attemptCount: publication.retryCycleAttemptCount,
+              createdAt: publication.retryCycleStartedAt,
               now: now(),
               retryAfterMs: outcome.failure.retryAfterMs,
             },
@@ -377,8 +377,8 @@ export function createPublicationJobProcessor(
             ? calculateRetryAt(
                 {
                   attemptId: claimed.attempt.id,
-                  attemptCount: claimed.publication.attemptCount,
-                  createdAt: claimed.publication.createdAt,
+                  attemptCount: claimed.publication.retryCycleAttemptCount,
+                  createdAt: claimed.publication.retryCycleStartedAt,
                   now: now(),
                   retryAfterMs: outcome.failure?.retryAfterMs,
                 },

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, lte, or, sql } from 'drizzle-orm';
 import type { createDatabase } from '../client.js';
 import { multipartUpload, uploadPart } from '../schema/multipart-uploads.js';
 import { video } from '../schema/videos.js';
@@ -206,11 +206,59 @@ export function createMultipartUploadRepository(db: Database) {
         )
         .limit(1),
 
-    listInitiationReconciliationRequired: (limit = 100) =>
+    listCleanupCandidates: (input: { now: Date; abortPendingBefore: Date; limit: number }) =>
+      db
+        .select({ upload: multipartUpload })
+        .from(multipartUpload)
+        .where(
+          or(
+            and(
+              inArray(multipartUpload.state, ['active', 'completing', 'failed']),
+              lte(multipartUpload.expiresAt, input.now),
+            ),
+            and(
+              eq(multipartUpload.state, 'abort_pending'),
+              lte(multipartUpload.updatedAt, input.abortPendingBefore),
+            ),
+          ),
+        )
+        .orderBy(asc(multipartUpload.expiresAt), asc(multipartUpload.updatedAt))
+        .limit(input.limit),
+
+    claimCleanupCandidate: (
+      userId: string,
+      id: string,
+      expectedState: 'active' | 'completing' | 'abort_pending' | 'failed',
+      expectedRevision: number,
+      now: Date,
+      abortPendingBefore: Date,
+    ) =>
+      db
+        .update(multipartUpload)
+        .set({ state: 'abort_pending', revision: expectedRevision + 1, updatedAt: now })
+        .where(
+          and(
+            eq(multipartUpload.id, id),
+            eq(multipartUpload.userId, userId),
+            eq(multipartUpload.state, expectedState),
+            eq(multipartUpload.revision, expectedRevision),
+            ...(expectedState === 'abort_pending'
+              ? [lte(multipartUpload.updatedAt, abortPendingBefore)]
+              : [lte(multipartUpload.expiresAt, now)]),
+          ),
+        )
+        .returning(),
+
+    listInitiationReconciliationRequired: (limit = 100, updatedBefore = new Date()) =>
       db
         .select()
         .from(multipartUpload)
-        .where(sql`${multipartUpload.state} IN ('initiating', 'initiation_reconciling')`)
+        .where(
+          and(
+            sql`${multipartUpload.state} IN ('initiating', 'initiation_reconciling')`,
+            lte(multipartUpload.updatedAt, updatedBefore),
+          ),
+        )
         .orderBy(asc(multipartUpload.createdAt))
         .limit(limit),
 

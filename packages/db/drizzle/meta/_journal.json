@@ -71,6 +71,20 @@
       "when": 1788278400002,
       "tag": "0009_publication_intent_vk_link_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788460541728,
+      "tag": "0010_superb_stark_industries",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788460669836,
+      "tag": "0011_silky_paladin",
+      "breakpoints": true
     }
   ]
 }

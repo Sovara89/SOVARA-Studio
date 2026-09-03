@@ -20,6 +20,43 @@ const EnvironmentSchema = z
     PUBLICATION_WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(2),
     PUBLICATION_JOB_ATTEMPTS: z.coerce.number().int().min(1).max(20).default(5),
     PUBLICATION_JOB_BACKOFF_MS: z.coerce.number().int().positive().max(3_600_000).default(5_000),
+    PUBLICATION_MAX_PROVIDER_ATTEMPTS: z.coerce.number().int().min(1).max(100).default(5),
+    PUBLICATION_RETRY_BASE_DELAY_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(86_400_000)
+      .default(5_000),
+    PUBLICATION_RETRY_MAX_DELAY_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(604_800_000)
+      .default(3_600_000),
+    PUBLICATION_RETRY_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(2_592_000_000)
+      .default(604_800_000),
+    PUBLICATION_RECONCILIATION_DELAY_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(86_400_000)
+      .default(30_000),
+    PUBLICATION_RECONCILIATION_MAX_AGE_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(2_592_000_000)
+      .default(86_400_000),
+    PUBLICATION_MAX_PROVIDER_RETRY_AFTER_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(604_800_000)
+      .default(3_600_000),
     PUBLICATION_LEASE_MS: z.coerce.number().int().positive().max(86_400_000).default(120_000),
     PUBLICATION_LEASE_HEARTBEAT_MS: z.coerce
       .number()
@@ -90,6 +127,16 @@ const EnvironmentSchema = z
         code: z.ZodIssueCode.custom,
         message: 'Lease heartbeat must be less than lease duration',
       });
+    if (value.PUBLICATION_RETRY_BASE_DELAY_MS > value.PUBLICATION_RETRY_MAX_DELAY_MS)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Publication retry base delay must not exceed maximum delay',
+      });
+    if (value.PUBLICATION_MAX_PROVIDER_RETRY_AFTER_MS > value.PUBLICATION_RETRY_MAX_DELAY_MS)
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Provider Retry-After cap must not exceed maximum retry delay',
+      });
     const vkConfiguration = [
       value.VK_CLIENT_ID,
       value.VK_SERVICE_TOKEN,
@@ -117,6 +164,13 @@ export const environment = parseWorkerEnvironment({
   PUBLICATION_WORKER_CONCURRENCY: process.env.PUBLICATION_WORKER_CONCURRENCY,
   PUBLICATION_JOB_ATTEMPTS: process.env.PUBLICATION_JOB_ATTEMPTS,
   PUBLICATION_JOB_BACKOFF_MS: process.env.PUBLICATION_JOB_BACKOFF_MS,
+  PUBLICATION_MAX_PROVIDER_ATTEMPTS: process.env.PUBLICATION_MAX_PROVIDER_ATTEMPTS,
+  PUBLICATION_RETRY_BASE_DELAY_MS: process.env.PUBLICATION_RETRY_BASE_DELAY_MS,
+  PUBLICATION_RETRY_MAX_DELAY_MS: process.env.PUBLICATION_RETRY_MAX_DELAY_MS,
+  PUBLICATION_RETRY_WINDOW_MS: process.env.PUBLICATION_RETRY_WINDOW_MS,
+  PUBLICATION_RECONCILIATION_DELAY_MS: process.env.PUBLICATION_RECONCILIATION_DELAY_MS,
+  PUBLICATION_RECONCILIATION_MAX_AGE_MS: process.env.PUBLICATION_RECONCILIATION_MAX_AGE_MS,
+  PUBLICATION_MAX_PROVIDER_RETRY_AFTER_MS: process.env.PUBLICATION_MAX_PROVIDER_RETRY_AFTER_MS,
   PUBLICATION_LEASE_MS: process.env.PUBLICATION_LEASE_MS,
   PUBLICATION_LEASE_HEARTBEAT_MS: process.env.PUBLICATION_LEASE_HEARTBEAT_MS,
   PUBLICATION_RECONCILE_INTERVAL_MS: process.env.PUBLICATION_RECONCILE_INTERVAL_MS,

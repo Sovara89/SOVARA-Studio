@@ -969,7 +969,8 @@ export function createMultipartUploadService(dependencies: MultipartUploadServic
       return status(userId, videoId, uploadId);
     if (upload.state !== 'abort_pending' && upload.expiresAt.getTime() > now().getTime())
       throw new UploadError('INVALID_UPLOAD_STATE', 'Upload has not expired');
-    return abort(userId, videoId, uploadId, { revision: upload.revision }, 'expired');
+    const finalState = upload.expiresAt.getTime() <= now().getTime() ? 'expired' : 'aborted';
+    return abort(userId, videoId, uploadId, { revision: upload.revision }, finalState);
   };
 
   const recoverStaleAwaitingIntent = async (userId: string, videoId: string) => {
@@ -996,8 +997,11 @@ export function createMultipartUploadService(dependencies: MultipartUploadServic
     return failed;
   };
 
-  const recoverPendingInitiations = async (limit = 100) => {
-    const pending = await dependencies.uploads.listInitiationReconciliationRequired(limit);
+  const recoverPendingInitiations = async (limit = 100, updatedBefore = new Date()) => {
+    const pending = await dependencies.uploads.listInitiationReconciliationRequired(
+      limit,
+      updatedBefore,
+    );
     return Promise.all(
       pending.map((upload) => reconcileInitiation(upload.userId, upload.videoId, upload.id)),
     );

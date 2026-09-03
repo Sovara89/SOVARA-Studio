@@ -53,6 +53,7 @@ export async function registerApp(
     if (options.publicationStatusService)
       await fastify.register(publicationStatusRoutes, {
         service: options.publicationStatusService,
+        appOrigin: options.appOrigin ?? 'http://localhost:5173',
       });
     fastify.get('/me', { preHandler: fastify.requireStudioUser }, async (request) => ({
       userId: request.studioAuth?.userId,

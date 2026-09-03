@@ -20,6 +20,14 @@ const EnvironmentSchema = z.object({
     .string()
     .regex(/^[1-9]\d*$/)
     .optional(),
+  UPLOAD_CLEANUP_INTERVAL_MS: z.coerce.number().int().positive().max(86_400_000).default(60_000),
+  UPLOAD_CLEANUP_BATCH_SIZE: z.coerce.number().int().min(1).max(1_000).default(100),
+  UPLOAD_CLEANUP_CLAIM_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(86_400_000)
+    .default(120_000),
 });
 
 export const environment = EnvironmentSchema.parse(process.env);

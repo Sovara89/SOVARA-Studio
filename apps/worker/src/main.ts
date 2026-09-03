@@ -1,6 +1,7 @@
 import { startPublicationWorker } from './runtime';
 import { startHealthServer } from './health-server';
 import { createWorkerProcessLifecycle } from './process-lifecycle.js';
+import { safeErrorFields } from '@sovara-studio/infra';
 
 const lifecycle = createWorkerProcessLifecycle({
   startWorker: startPublicationWorker,
@@ -10,7 +11,7 @@ const lifecycle = createWorkerProcessLifecycle({
 const handleSignal = (signal: string) => {
   console.log(`Received ${signal}; shutting down`);
   void lifecycle.shutdown(new Error(`Received ${signal}`)).catch((err) => {
-    console.error('Worker shutdown failed:', err);
+    console.error(JSON.stringify({ event: 'worker_shutdown_failed', ...safeErrorFields(err) }));
     process.exitCode = 1;
   });
 };
@@ -22,7 +23,7 @@ process.once('SIGINT', () => handleSignal('SIGINT'));
 
 const startup = lifecycle.start();
 void lifecycle.failure.catch((err) => {
-  console.error('Worker runtime failed:', err);
+  console.error(JSON.stringify({ event: 'worker_runtime_failed', ...safeErrorFields(err) }));
   process.exitCode = 1;
 });
 startup
@@ -34,8 +35,15 @@ startup
     void lifecycle
       .shutdown(err)
       .then(
-        () => console.error('Failed to start worker:', err),
-        (finalError) => console.error('Worker startup or cleanup failed:', finalError),
+        () =>
+          console.error(JSON.stringify({ event: 'worker_start_failed', ...safeErrorFields(err) })),
+        (finalError) =>
+          console.error(
+            JSON.stringify({
+              event: 'worker_startup_cleanup_failed',
+              ...safeErrorFields(finalError),
+            }),
+          ),
       )
       .finally(() => {
         process.exitCode = 1;

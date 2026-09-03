@@ -1,0 +1,1 @@
+CREATE INDEX "multipart_upload_cleanup_idx" ON "multipart_upload" USING btree ("state","expires_at","updated_at") WHERE "multipart_upload"."state" IN ('active', 'completing', 'abort_pending', 'failed');

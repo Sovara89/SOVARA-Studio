@@ -20,10 +20,12 @@ import {
   createS3Client,
   createS3MultipartStorage,
   createS3PrivatePreviewStorage,
+  safeErrorFields,
 } from '@sovara-studio/infra';
 import { createConfiguredOAuthProviders, createOAuthService } from './services/oauth-service.js';
 import { createPublicationIntentService } from './services/publication-intent-service.js';
 import { createPublicationStatusService } from './services/publication-status-service.js';
+import { createMultipartCleanupLoop } from './services/multipart-cleanup-loop.js';
 
 const storageConfiguration = loadStorageConfiguration();
 const storageClient = createS3Client({
@@ -37,9 +39,10 @@ const presignClient = storageConfiguration.s3.presignEndpoint
       maxAttempts: 1,
     })
   : storageClient;
+const uploadRepository = createMultipartUploadRepository(database.db);
 const uploadService = createMultipartUploadService({
   videos: createVideoRepository(database.db),
-  uploads: createMultipartUploadRepository(database.db),
+  uploads: uploadRepository,
   storage: createS3MultipartStorage(
     storageClient,
     { bucket: storageConfiguration.s3.bucket },
@@ -63,6 +66,19 @@ const oauthService = createOAuthService({
 });
 const server = Fastify({
   logger: {
+    redact: {
+      paths: [
+        'req.headers.authorization',
+        'req.headers.cookie',
+        '*.accessToken',
+        '*.refreshToken',
+        '*.clientSecret',
+        '*.secretAccessKey',
+        '*.authorizationUrl',
+        '*.uploadUrl',
+      ],
+      censor: '[REDACTED]',
+    },
     serializers: {
       req: (request: FastifyRequest) => ({
         method: request.method,
@@ -91,6 +107,14 @@ const publicationIntentService = createPublicationIntentService({
 const publicationStatusService = createPublicationStatusService({
   publications: createPublicationRepository(database.db),
 });
+const multipartCleanup = createMultipartCleanupLoop({
+  uploads: uploadRepository,
+  service: uploadService,
+  intervalMs: environment.UPLOAD_CLEANUP_INTERVAL_MS,
+  batchSize: environment.UPLOAD_CLEANUP_BATCH_SIZE,
+  claimTimeoutMs: environment.UPLOAD_CLEANUP_CLAIM_TIMEOUT_MS,
+  log: (event, fields) => server.log.info({ event, ...fields }),
+});
 
 server.addContentTypeParser(
   ['application/json', 'application/x-www-form-urlencoded'],
@@ -115,13 +139,16 @@ const shutdown = async (signal: string) => {
   shuttingDown = true;
   server.log.info(`Received ${signal}; shutting down`);
   await server.close();
+  await multipartCleanup.close();
   await database.pool.end();
   storageClient.destroy();
   if (presignClient !== storageClient) presignClient.destroy();
 };
 
 const handleSignal = (signal: string) => {
-  void shutdown(signal).catch((err) => server.log.error(err));
+  void shutdown(signal).catch((err) =>
+    server.log.error({ event: 'api_shutdown_failed', ...safeErrorFields(err) }),
+  );
 };
 
 process.once('SIGTERM', () => handleSignal('SIGTERM'));
@@ -133,9 +160,10 @@ const start = async () => {
       host: '0.0.0.0',
       port: API_PORT,
     });
+    await multipartCleanup.start();
     server.log.info(`Server listening on ${server.server.address()}`);
   } catch (err) {
-    server.log.error(err);
+    server.log.error({ event: 'api_start_failed', ...safeErrorFields(err) });
     process.exit(1);
   }
 };

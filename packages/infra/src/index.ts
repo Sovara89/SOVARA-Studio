@@ -6,3 +6,4 @@ export * from './publication-queue.js';
 export * from './s3-media-source.js';
 export * from './publishing-credential-service.js';
 export * from './s3-private-preview-storage.js';
+export * from './safe-error.js';

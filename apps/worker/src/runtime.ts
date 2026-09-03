@@ -409,6 +409,15 @@ export async function startPublicationWorker(startupSignal?: AbortSignal): Promi
       preflight,
       leaseDurationMs: environment.PUBLICATION_LEASE_MS,
       leaseHeartbeatMs: environment.PUBLICATION_LEASE_HEARTBEAT_MS,
+      retryPolicy: {
+        maxProviderAttempts: environment.PUBLICATION_MAX_PROVIDER_ATTEMPTS,
+        baseDelayMs: environment.PUBLICATION_RETRY_BASE_DELAY_MS,
+        maxDelayMs: environment.PUBLICATION_RETRY_MAX_DELAY_MS,
+        maxRetryWindowMs: environment.PUBLICATION_RETRY_WINDOW_MS,
+        reconciliationDelayMs: environment.PUBLICATION_RECONCILIATION_DELAY_MS,
+        reconciliationMaxAgeMs: environment.PUBLICATION_RECONCILIATION_MAX_AGE_MS,
+        maxProviderRetryAfterMs: environment.PUBLICATION_MAX_PROVIDER_RETRY_AFTER_MS,
+      },
       shutdownSignal: shutdownController.signal,
       log: (event, fields) => console.log(JSON.stringify({ event, ...fields })),
     });

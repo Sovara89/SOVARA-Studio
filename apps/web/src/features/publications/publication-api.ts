@@ -1,7 +1,9 @@
 import {
   createPublicationIntentRequestSchema,
+  publicationStatusResponseSchema,
   publicationIntentResponseSchema,
   publicationStatusListResponseSchema,
+  retryPublicationRequestSchema,
   type CreatePublicationIntentRequest,
   type PublicationStatusResponse,
 } from '@sovara-studio/contracts';
@@ -39,6 +41,15 @@ export async function listPublicationStatus(): Promise<PublicationStatusResponse
   return publicationStatusListResponseSchema.parse(
     await json(await fetch(`${apiBaseUrl}/publication-status`, { credentials: 'same-origin' })),
   );
+}
+export async function retryPublication(publicationId: string, revision: number) {
+  const response = await fetch(`${apiBaseUrl}/publication-status/${publicationId}/retry`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(retryPublicationRequestSchema.parse({ revision })),
+  });
+  return publicationStatusResponseSchema.parse(await json(response));
 }
 export async function uploadPreview(intentId: string, file: File, revision: number) {
   const response = await fetch(`${apiBaseUrl}/publication-intents/${intentId}/preview`, {

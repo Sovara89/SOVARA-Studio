@@ -33,6 +33,28 @@ describe('worker configuration', () => {
     );
   });
 
+  test('parses bounded domain retry policy and rejects contradictory delay caps', () => {
+    expect(
+      parseWorkerEnvironment({
+        PUBLICATION_RETRY_BASE_DELAY_MS: '1000',
+        PUBLICATION_RETRY_MAX_DELAY_MS: '5000',
+        PUBLICATION_MAX_PROVIDER_RETRY_AFTER_MS: '4000',
+        PUBLICATION_MAX_PROVIDER_ATTEMPTS: '7',
+      }),
+    ).toMatchObject({
+      PUBLICATION_RETRY_BASE_DELAY_MS: 1000,
+      PUBLICATION_RETRY_MAX_DELAY_MS: 5000,
+      PUBLICATION_MAX_PROVIDER_RETRY_AFTER_MS: 4000,
+      PUBLICATION_MAX_PROVIDER_ATTEMPTS: 7,
+    });
+    expect(() =>
+      parseWorkerEnvironment({
+        PUBLICATION_RETRY_BASE_DELAY_MS: '5001',
+        PUBLICATION_RETRY_MAX_DELAY_MS: '5000',
+      }),
+    ).toThrow(/base delay/i);
+  });
+
   test('requires complete VK community publication configuration', () => {
     expect(() =>
       parseWorkerEnvironment({

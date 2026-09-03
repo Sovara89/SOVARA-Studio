@@ -314,6 +314,31 @@ describe('multipart upload service', () => {
     expect(repositories.uploads.settleAbort).toHaveBeenCalledTimes(1);
   });
 
+  test('preserves explicit-abort versus expiry semantics when recovering abort_pending', async () => {
+    const repositories = makeRepositories();
+    repositories.uploads.findByIdForUser.mockResolvedValue([
+      {
+        ...uploadRow,
+        state: 'abort_pending',
+        revision: 1,
+        expiresAt: new Date('2027-01-01T00:00:00Z'),
+      },
+    ]);
+    const service = createMultipartUploadService({
+      ...repositories,
+      storage: makeStorage(),
+      configuration,
+      now: () => new Date('2026-01-01T00:00:00Z'),
+    });
+    await service.cleanupExpired('owner-id', videoRow.id, uploadRow.id);
+    expect(repositories.uploads.settleAbort).toHaveBeenCalledWith(
+      'owner-id',
+      uploadRow.id,
+      1,
+      'aborted',
+    );
+  });
+
   test('rejects an expired upload before signing', async () => {
     const repositories = makeRepositories();
     repositories.uploads.findByIdForUser.mockResolvedValue([

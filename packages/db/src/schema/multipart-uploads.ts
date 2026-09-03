@@ -67,6 +67,9 @@ export const multipartUpload = pgTable(
       table.expiresAt,
     ),
     index('multipart_upload_videoId_createdAt_idx').on(table.videoId, table.createdAt),
+    index('multipart_upload_cleanup_idx')
+      .on(table.state, table.expiresAt, table.updatedAt)
+      .where(sql`${table.state} IN ('active', 'completing', 'abort_pending', 'failed')`),
     foreignKey({
       columns: [table.videoId, table.userId],
       foreignColumns: [video.id, video.userId],
