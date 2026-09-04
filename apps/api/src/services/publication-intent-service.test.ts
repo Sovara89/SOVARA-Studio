@@ -32,6 +32,26 @@ const row = (overrides: Record<string, unknown> = {}) =>
   }) as never;
 
 describe('publication intent preview service', () => {
+  test('returns the existing publication after a duplicate publish request', async () => {
+    const publications = {
+      findForUserByVideoAndAccount: vi
+        .fn()
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ id: '7c4f8e30-e24e-4cde-9534-a43f4b3f98e8' }]),
+      createOwnedPublication: vi.fn().mockRejectedValue({ code: '23505' }),
+    } as never;
+    const service = createPublicationIntentService({
+      intents: { findForUser: vi.fn().mockResolvedValue([row()]) } as never,
+      previewStorage: {} as never,
+      publications,
+    });
+
+    await expect(service.publish('owner-id', intentId, 4)).resolves.toEqual({
+      publicationId: '7c4f8e30-e24e-4cde-9534-a43f4b3f98e8',
+    });
+    expect(publications.createOwnedPublication).toHaveBeenCalledTimes(1);
+  });
+
   test('removes only an owner revision-matched preview, then cleans its objects', async () => {
     const removePreview = vi.fn().mockResolvedValue([
       row({

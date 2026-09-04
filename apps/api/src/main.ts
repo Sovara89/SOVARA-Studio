@@ -95,6 +95,7 @@ const server = Fastify({
 });
 const publicationIntentService = createPublicationIntentService({
   intents: createPublicationIntentRepository(database.db),
+  publications: createPublicationRepository(database.db),
   previewStorage: createS3PrivatePreviewStorage(
     storageClient,
     storageConfiguration.s3.bucket,

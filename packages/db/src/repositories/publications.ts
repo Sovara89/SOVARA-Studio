@@ -199,6 +199,19 @@ export function createPublicationRepository(db: Database) {
         .where(and(eq(publication.id, id), eq(publication.userId, userId)))
         .limit(1),
 
+    findForUserByVideoAndAccount: (userId: string, videoId: string, publishingAccountId: string) =>
+      db
+        .select()
+        .from(publication)
+        .where(
+          and(
+            eq(publication.userId, userId),
+            eq(publication.videoId, videoId),
+            eq(publication.publishingAccountId, publishingAccountId),
+          ),
+        )
+        .limit(1),
+
     retryFailedPublication: (userId: string, id: string, expectedRevision: number) =>
       db
         .update(publication)

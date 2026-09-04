@@ -1,5 +1,7 @@
 import {
   createPublicationIntentRequestSchema,
+  publishPublicationIntentRequestSchema,
+  publishPublicationIntentResponseSchema,
   publicationStatusResponseSchema,
   publicationIntentResponseSchema,
   publicationStatusListResponseSchema,
@@ -36,6 +38,15 @@ export async function createIntent(input: CreatePublicationIntentRequest) {
     body: JSON.stringify(createPublicationIntentRequestSchema.parse(input)),
   });
   return publicationIntentResponseSchema.parse(await json(response));
+}
+export async function publishIntent(intentId: string, revision: number) {
+  const response = await fetch(`${apiBaseUrl}/publication-intents/${intentId}/publish`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(publishPublicationIntentRequestSchema.parse({ revision })),
+  });
+  return publishPublicationIntentResponseSchema.parse(await json(response));
 }
 export async function listPublicationStatus(): Promise<PublicationStatusResponse[]> {
   return publicationStatusListResponseSchema.parse(

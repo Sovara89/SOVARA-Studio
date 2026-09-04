@@ -7,6 +7,7 @@ import {
   createIntent,
   listAccounts,
   listPublicationStatus,
+  publishIntent,
   retryPublication,
 } from './publication-api';
 
@@ -17,6 +18,7 @@ vi.mock('./publication-api', () => ({
   removePreview: vi.fn(),
   retryPublication: vi.fn(),
   uploadPreview: vi.fn(),
+  publishIntent: vi.fn(),
 }));
 
 const intent = {
@@ -104,5 +106,21 @@ describe('PublicationComposer VK metadata link', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Retry publication' }));
     await waitFor(() => expect(retryPublication).toHaveBeenCalledWith(failed.id, 7));
     expect(screen.getByText('Publication retry queued.')).toBeInTheDocument();
+  });
+
+  test('publishes a saved draft once through the explicit action', async () => {
+    vi.mocked(publishIntent).mockResolvedValue({ publicationId: intent.id });
+    render(<PublicationComposer />);
+    fireEvent.change(screen.getByLabelText('Platform'), { target: { value: 'vk' } });
+    fireEvent.change(await screen.findByLabelText('Account'), {
+      target: { value: intent.publishingAccountId },
+    });
+    fireEvent.change(screen.getByLabelText('Ready video ID'), { target: { value: intent.videoId } });
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'News' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Publish now' }));
+
+    await waitFor(() => expect(publishIntent).toHaveBeenCalledWith(intent.id, intent.revision));
+    expect(screen.getByText('Publication queued.')).toBeInTheDocument();
   });
 });

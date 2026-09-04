@@ -112,4 +112,31 @@ describe('publication intent routes', () => {
     expect(response.statusCode).toBe(200);
     expect(removePreview).toHaveBeenCalledWith('owner-id', intentId, 0);
   });
+
+  test('starts publication from an explicit revision-bound request', async () => {
+    const publish = vi.fn().mockResolvedValue({ publicationId: intentId });
+    server = Fastify();
+    server.addContentTypeParser('application/json', { parseAs: 'buffer' }, (_request, body, done) =>
+      done(null, body),
+    );
+    server.decorateRequest('studioAuth', null);
+    server.decorate('requireStudioUser', async (request) => {
+      request.studioAuth = { userId: 'owner-id', sessionId: 'session-id' };
+    });
+    await server.register(publicationIntentRoutes, {
+      service: { publish } as never,
+      appOrigin: 'http://localhost:5173',
+      prefix: '/api',
+    });
+
+    const response = await server.inject({
+      method: 'POST',
+      url: `/api/publication-intents/${intentId}/publish`,
+      headers: { origin: 'http://localhost:5173' },
+      payload: { revision: 4 },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(publish).toHaveBeenCalledWith('owner-id', intentId, 4);
+  });
 });

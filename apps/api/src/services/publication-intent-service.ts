@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { createPublicationIntentRepository } from '@sovara-studio/db';
+import type { createPublicationRepository } from '@sovara-studio/db';
 import type { PrivatePreviewStorage } from '@sovara-studio/infra';
 import type {
   CreatePublicationIntentRequest,
@@ -7,6 +8,7 @@ import type {
 } from '@sovara-studio/contracts';
 
 type Repository = ReturnType<typeof createPublicationIntentRepository>;
+type PublicationRepository = ReturnType<typeof createPublicationRepository>;
 export class PublicationIntentError extends Error {
   constructor(
     readonly code:
@@ -49,6 +51,7 @@ function response(row: Awaited<ReturnType<Repository['findForUser']>>[number]) {
 export function createPublicationIntentService(deps: {
   intents: Repository;
   previewStorage: PrivatePreviewStorage;
+  publications?: PublicationRepository;
   previewUrlTtlSeconds?: number;
   vkCommunityConfigured?: boolean;
   onPreviewCleanupFailure?: (event: { intentId: string }) => void;
@@ -94,6 +97,43 @@ export function createPublicationIntentService(deps: {
     },
     async list(userId: string) {
       return (await deps.intents.listForUser(userId)).map(response);
+    },
+    async publish(userId: string, id: string, revision: number) {
+      const current = (await deps.intents.findForUser(userId, id))[0];
+      if (!current) throw new PublicationIntentError('NOT_FOUND', 'Publication intent was not found');
+      if (current.revision !== revision)
+        throw new PublicationIntentError('CONFLICT', 'This intent changed; refresh and retry');
+      if (!deps.publications)
+        throw new PublicationIntentError('STORAGE_UNAVAILABLE', 'Publication is temporarily unavailable');
+
+      const existing = await deps.publications.findForUserByVideoAndAccount(
+        userId,
+        current.videoId,
+        current.publishingAccountId,
+      );
+      if (existing[0]) return { publicationId: existing[0].id };
+      try {
+        const created = await deps.publications.createOwnedPublication(userId, {
+          videoId: current.videoId,
+          publishingAccountId: current.publishingAccountId,
+          platform: current.platform as 'youtube' | 'vk',
+          title: current.title,
+          description: current.description,
+          metadata: { link: current.link, createCommunityPost: current.createCommunityPost },
+        });
+        if (!created[0]) throw new Error('Publication was not created');
+        return { publicationId: created[0].id };
+      } catch (error) {
+        if ((error as { code?: string }).code === '23505') {
+          const duplicate = await deps.publications.findForUserByVideoAndAccount(
+            userId,
+            current.videoId,
+            current.publishingAccountId,
+          );
+          if (duplicate[0]) return { publicationId: duplicate[0].id };
+        }
+        return mapError(error);
+      }
     },
     async update(userId: string, id: string, input: UpdatePublicationIntentRequest) {
       const current = (await deps.intents.findForUser(userId, id))[0];

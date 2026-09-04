@@ -5,31 +5,22 @@ import {
   createIntent,
   listAccounts,
   listPublicationStatus,
+  publishIntent,
   removePreview,
   retryPublication,
   uploadPreview,
 } from './publication-api';
-
-/** datetime-local is a wall-clock value in the browser's local timezone; the API receives UTC. */
-export function localScheduleToUtc(value: string) {
-  const date = new Date(value);
-  if (!value || Number.isNaN(date.getTime())) {
-    throw new Error('Choose a valid local date and time.');
-  }
-  return date.toISOString();
-}
 
 export function vkMetadataLinkForSave(value: string): string | null {
   return value.trim() || null;
 }
 
 function statusText(status: PublicationStatusResponse) {
-  if (status.state === 'published') return 'Published';
-  if (status.state === 'retry_wait') {
-    return `Retry scheduled${status.nextAttemptAt ? ` for ${new Date(status.nextAttemptAt).toLocaleString()}` : ''}`;
-  }
-  if (status.state === 'failed') return 'Failed';
-  return status.state.replace('_', ' ');
+  if (status.state === 'published') return 'published';
+  if (status.state === 'publishing' || status.state === 'reconciling') return 'publishing';
+  if (status.state === 'failed' || status.state === 'manual_review' || status.state === 'cancelled')
+    return 'error';
+  return 'pending';
 }
 export function PublicationComposer() {
   const [accounts, setAccounts] = useState<PublishingAccount[]>([]);
@@ -39,13 +30,12 @@ export function PublicationComposer() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [link, setLink] = useState('https://vk.com/sovara_news');
-  const [mode, setMode] = useState<'DRAFT' | 'PUBLISH_NOW' | 'SCHEDULED'>('DRAFT');
-  const [scheduledAt, setScheduledAt] = useState('');
   const [community, setCommunity] = useState(false);
   const [preview, setPreview] = useState<File>();
   const [message, setMessage] = useState('');
   const [statuses, setStatuses] = useState<PublicationStatusResponse[]>([]);
   const [savedIntent, setSavedIntent] = useState<PublicationIntentResponse | null>(null);
+  const [publishing, setPublishing] = useState(false);
   useEffect(() => {
     void listAccounts()
       .then((value) => setAccounts(value.filter((account) => account.status === 'active')))
@@ -70,13 +60,12 @@ export function PublicationComposer() {
       setMessage('');
       const account = available.find((value) => value.id === accountId);
       if (!account) throw new Error('Select an active publishing account.');
-      const scheduled = mode === 'SCHEDULED' ? localScheduleToUtc(scheduledAt) : null;
       const created = await createIntent({
         videoId,
         platform,
         publishingAccountId: account.id,
-        mode,
-        scheduledAt: scheduled,
+        mode: 'DRAFT',
+        scheduledAt: null,
         title,
         description: description || null,
         link: platform === 'vk' ? vkMetadataLinkForSave(link) : null,
@@ -89,6 +78,20 @@ export function PublicationComposer() {
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save publication intent.');
+    }
+  };
+  const publishNow = async () => {
+    if (!savedIntent || publishing) return;
+    try {
+      setPublishing(true);
+      setMessage('');
+      await publishIntent(savedIntent.id, savedIntent.revision);
+      setStatuses(await listPublicationStatus());
+      setMessage('Publication queued.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not start publication.');
+    } finally {
+      setPublishing(false);
     }
   };
   const removeSavedPreview = async () => {
@@ -161,24 +164,6 @@ export function PublicationComposer() {
           onChange={(event) => setDescription(event.target.value)}
         />
       </label>
-      <label>
-        Intent{' '}
-        <select value={mode} onChange={(event) => setMode(event.target.value as typeof mode)}>
-          <option value="DRAFT">Draft</option>
-          <option value="PUBLISH_NOW">Publish now</option>
-          <option value="SCHEDULED">Scheduled</option>
-        </select>
-      </label>
-      {mode === 'SCHEDULED' && (
-        <label>
-          Local schedule (your browser timezone; saved as UTC){' '}
-          <input
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(event) => setScheduledAt(event.target.value)}
-          />
-        </label>
-      )}
       {platform === 'vk' && (
         <>
           <label>
@@ -212,6 +197,11 @@ export function PublicationComposer() {
       <button type="button" onClick={() => void submit()}>
         Save draft
       </button>
+      {savedIntent && (
+        <button type="button" disabled={publishing} onClick={() => void publishNow()}>
+          {publishing ? 'Publishing…' : 'Publish now'}
+        </button>
+      )}
       {savedIntent?.preview && (
         <button type="button" onClick={() => void removeSavedPreview()}>
           Remove preview

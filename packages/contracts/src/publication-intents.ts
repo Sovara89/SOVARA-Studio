@@ -102,6 +102,12 @@ export const previewCompleteRequestSchema = z
   .strict();
 export const previewRemoveRequestSchema = previewCompleteRequestSchema;
 export const publicationIntentParamsSchema = z.object({ intentId: z.string().uuid() }).strict();
+export const publishPublicationIntentRequestSchema = z
+  .object({ revision: z.number().int().nonnegative() })
+  .strict();
+export const publishPublicationIntentResponseSchema = z
+  .object({ publicationId: z.string().uuid() })
+  .strict();
 
 export const publicationIntentResponseSchema = z.object({
   id: z.string().uuid(),

@@ -4,7 +4,6 @@ import parserTs from '@typescript-eslint/parser';
 export default [
   {
     ignores: [
-      '.opencode/**',
       'node_modules/**',
       '**/dist/**',
       'coverage/**',

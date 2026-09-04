@@ -4,6 +4,8 @@ import {
   previewCompleteRequestSchema,
   previewRemoveRequestSchema,
   previewUploadRequestSchema,
+  publishPublicationIntentRequestSchema,
+  publishPublicationIntentResponseSchema,
   publicationIntentParamsSchema,
   updatePublicationIntentRequestSchema,
 } from '@sovara-studio/contracts';
@@ -79,6 +81,23 @@ export async function publicationIntentRoutes(
             parseJsonBody(request.body, updatePublicationIntentRequestSchema),
           ),
         );
+      } catch (error) {
+        return send(reply, error, request.id);
+      }
+    },
+  );
+  fastify.post(
+    '/publication-intents/:intentId/publish',
+    { preHandler: fastify.requireStudioUser },
+    async (request, reply) => {
+      try {
+        origin(request.headers.origin, options.appOrigin);
+        const result = await options.service.publish(
+          request.studioAuth!.userId,
+          params(request.params).intentId,
+          parseJsonBody(request.body, publishPublicationIntentRequestSchema).revision,
+        );
+        return reply.send(publishPublicationIntentResponseSchema.parse(result));
       } catch (error) {
         return send(reply, error, request.id);
       }

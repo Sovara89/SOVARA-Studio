@@ -6,6 +6,7 @@ import {
   applyMigrations,
   createDatabase,
   createPublishingAccountRepository,
+  createPublicationIntentRepository,
   createPublicationRepository,
   createVideoRepository,
   publication,
@@ -29,6 +30,9 @@ import type { PublicationPublisher } from '../../packages/platforms/src/publicat
 import { createYouTubePublisher } from '../../packages/platforms/src/youtube-publisher.js';
 import { createVKVideoPublisher } from '../../packages/platforms/src/vk-video-publisher.js';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import Fastify from '../../apps/api/node_modules/fastify/fastify.js';
+import { publicationIntentRoutes } from '../../apps/api/src/routes/publication-intents.js';
+import { createPublicationIntentService } from '../../apps/api/src/services/publication-intent-service.js';
 
 const adminUrl = process.env.TEST_DATABASE_ADMIN_URL;
 if (!adminUrl)
@@ -266,7 +270,7 @@ describe('TASK-010 generic publication execution', () => {
       await owner.query(`GRANT CONNECT ON DATABASE ${databaseName} TO ${runtimeRole}`);
       await owner.query(`GRANT USAGE ON SCHEMA public TO ${runtimeRole}`);
       await owner.query(
-        'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "user", account, session, verification, publishing_account, video, multipart_upload, upload_part, publication, publication_attempt TO ' +
+        'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "user", account, session, verification, publishing_account, video, multipart_upload, upload_part, publication, publication_attempt, publication_intent TO ' +
           runtimeRole,
       );
     } finally {
@@ -374,6 +378,119 @@ describe('TASK-010 generic publication execution', () => {
       });
     } finally {
       await worker.close();
+    }
+  });
+
+  test('publishes one READY draft through activation, reconciliation, worker, and fake provider', async () => {
+    if (!database) throw new Error('Database is not initialized');
+    const publications = createPublicationRepository(database.db);
+    const [readyVideo] = await database.db
+      .insert(videoTable)
+      .values({
+        userId: ownerId,
+        originalFilename: 'publish-now.mp4',
+        contentType: 'video/mp4',
+        expectedSizeBytes: 10,
+        verifiedSizeBytes: 10,
+        storageBackend: 's3-compatible',
+        storageBucket: process.env.S3_BUCKET ?? 'sovara-uploads',
+        objectKey: `videos/${ownerId}/${randomUUID()}.mp4`,
+        objectEtag: 'publish-now-etag',
+        state: 'ready',
+        verifiedAt: new Date(),
+      })
+      .returning();
+    if (!readyVideo) throw new Error('Ready test video was not created');
+
+    const server = Fastify();
+    server.addContentTypeParser('application/json', { parseAs: 'buffer' }, (_request, body, done) =>
+      done(null, body),
+    );
+    server.decorateRequest('studioAuth', null);
+    server.decorate('requireStudioUser', async (request) => {
+      request.studioAuth = { userId: ownerId, sessionId: 'session-id' };
+    });
+    await server.register(publicationIntentRoutes, {
+      service: createPublicationIntentService({
+        intents: createPublicationIntentRepository(database.db),
+        publications,
+        previewStorage: {} as never,
+      }),
+      appOrigin: 'http://localhost:5173',
+    });
+    await server.ready();
+    const draft = await server.inject({
+      method: 'POST',
+      url: '/publication-intents',
+      headers: { origin: 'http://localhost:5173' },
+      payload: {
+        videoId: readyVideo.id,
+        platform: 'youtube',
+        publishingAccountId: accountId,
+        mode: 'DRAFT',
+        scheduledAt: null,
+        title: 'Publish now',
+        description: null,
+        link: null,
+        createCommunityPost: false,
+      },
+    });
+    expect(draft.statusCode).toBe(201);
+    const intent = draft.json() as { id: string; revision: number };
+
+    let remoteCreates = 0;
+    const publisher: PublicationPublisher = {
+      platform: 'youtube',
+      publish: async () => {
+        remoteCreates += 1;
+        return {
+          kind: 'published',
+          remote: { remoteMediaId: 'publish-now-media', remoteUrl: 'https://youtube.example/publish-now' },
+        };
+      },
+    };
+    const worker = createPublicationWorker(
+      { ...queueConfiguration, workerConcurrency: 1 },
+      createPublicationJobProcessor({
+        publications,
+        publishers: new Map([['youtube', publisher]]),
+        preflight: createProductionPreflight(),
+        leaseDurationMs: 5_000,
+        leaseHeartbeatMs: 1_000,
+      }),
+    );
+    await worker.worker.waitUntilReady();
+    try {
+      const activation = () =>
+        server.inject({
+          method: 'POST',
+          url: `/publication-intents/${intent.id}/publish`,
+          headers: { origin: 'http://localhost:5173' },
+          payload: { revision: intent.revision },
+        });
+      const [first, second] = await Promise.all([activation(), activation()]);
+      expect(first.statusCode).toBe(200);
+      expect(second.statusCode).toBe(200);
+      const created = await publications.findForUserByVideoAndAccount(ownerId, readyVideo.id, accountId);
+      expect(created).toHaveLength(1);
+
+      const reconciler = createPublicationReconciler({
+        publications,
+        queue,
+        publishers: new Map([['youtube', publisher]]),
+        intervalMs: 60_000,
+        batchSize: 10,
+        leaseDurationMs: 5_000,
+      });
+      await reconciler.reconcileOnce();
+      await waitFor(
+        () => publications.findById(created[0]!.id),
+        (rows) => rows[0]?.state === 'published',
+      );
+      expect(remoteCreates).toBe(1);
+    } finally {
+      await worker.close();
+      await server.close();
     }
   });
 
