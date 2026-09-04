@@ -1,12 +1,7 @@
-.opencode/**
-opencode.json
 node_modules/**
 dist/**
 **/dist/**
 coverage/**
-.sovara-studio-root
-SEND_THIS_FIRST.txt
-README_OPENCODE.txt
 .env.example
 .editorconfig
 .gitignore
