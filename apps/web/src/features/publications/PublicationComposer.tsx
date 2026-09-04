@@ -10,11 +10,21 @@ import {
   retryPublication,
   startVkOAuth,
   startYouTubeOAuth,
+  updateIntent,
   uploadPreview,
 } from './publication-api';
 
 export function vkMetadataLinkForSave(value: string): string | null {
   return value.trim() || null;
+}
+
+const accountStorageKey = (platform: 'youtube' | 'vk') => `sovara-studio:publishing-account:${platform}`;
+
+function accountFor(platform: 'youtube' | 'vk', accounts: PublishingAccount[], current = '') {
+  const available = accounts.filter((account) => account.platform === platform);
+  if (available.some((account) => account.id === current)) return current;
+  const saved = window.localStorage.getItem(accountStorageKey(platform));
+  return available.some((account) => account.id === saved) ? saved! : available[0]?.id ?? '';
 }
 
 function statusText(status: PublicationStatusResponse) {
@@ -45,17 +55,24 @@ export function PublicationComposer({ readyVideoId }: { readyVideoId?: string })
   const [statuses, setStatuses] = useState<PublicationStatusResponse[]>([]);
   const [savedIntent, setSavedIntent] = useState<PublicationIntentResponse | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ video?: string; account?: string; title?: string }>({});
+  const setActiveAccounts = (value: PublishingAccount[]) => {
+    setAccounts(value.filter((account) => account.status === 'active'));
+  };
   useEffect(() => {
     if (readyVideoId) setVideoId(readyVideoId);
   }, [readyVideoId]);
   useEffect(() => {
+    setAccountId((current) => accountFor(platform, accounts, current));
+  }, [accounts, platform]);
+  useEffect(() => {
     void listAccounts()
-      .then((value) => setAccounts(value.filter((account) => account.status === 'active')))
+      .then(setActiveAccounts)
       .catch(() => setMessage('Аккаунты для публикации временно недоступны.'));
   }, []);
   const refreshAccounts = async () => {
     try {
-      setAccounts((await listAccounts()).filter((account) => account.status === 'active'));
+      setActiveAccounts(await listAccounts());
     } catch {
       setMessage('Аккаунты для публикации временно недоступны.');
     }
@@ -92,37 +109,58 @@ export function PublicationComposer({ readyVideoId }: { readyVideoId?: string })
   };
   const selectPlatform = (value: 'youtube' | 'vk') => {
     setPlatform(value);
-    setAccountId('');
+    setAccountId(accountFor(value, accounts));
+  };
+  const saveDraft = async () => {
+    const account = available.find((value) => value.id === accountId);
+    const errors = {
+      ...(videoId ? {} : { video: 'Сначала загрузите видео.' }),
+      ...(account ? {} : { account: 'Выберите аккаунт в настройках.' }),
+      ...(title.trim() ? {} : { title: 'Введите заголовок.' }),
+    };
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) {
+      setMessage('Заполните обязательные поля.');
+      return null;
+    }
+    if (!account) return null;
+    const details = {
+      mode: 'DRAFT' as const,
+      scheduledAt: null,
+      title,
+      description: description || null,
+      link: platform === 'vk' ? vkMetadataLinkForSave(link) : null,
+      createCommunityPost: community,
+    };
+    const draft = savedIntent && savedIntent.videoId === videoId && savedIntent.platform === platform && savedIntent.publishingAccountId === account.id
+      ? await updateIntent(savedIntent.id, { ...details, revision: savedIntent.revision })
+      : await createIntent({ ...details, videoId, platform, publishingAccountId: account.id });
+    const intent = preview ? await uploadPreview(draft.id, preview, draft.revision) : draft;
+    setSavedIntent(intent);
+    return intent;
   };
   const submit = async () => {
-    try {
-      setMessage('');
-      const account = available.find((value) => value.id === accountId);
-      if (!account) throw new Error('Выберите аккаунт в настройках.');
-      const created = await createIntent({
-        videoId,
-        platform,
-        publishingAccountId: account.id,
-        mode: 'DRAFT',
-        scheduledAt: null,
-        title,
-        description: description || null,
-        link: platform === 'vk' ? vkMetadataLinkForSave(link) : null,
-        createCommunityPost: community,
-      });
-      const intent = preview ? await uploadPreview(created.id, preview, created.revision) : created;
-      setSavedIntent(intent);
-      setMessage(`${platform === 'youtube' ? 'YouTube' : 'VK Video'}: черновик сохранён. Публикация не запускалась.`);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Не удалось сохранить черновик.');
-    }
-  };
-  const publishNow = async () => {
-    if (!savedIntent || publishing) return;
+    if (publishing) return;
     try {
       setPublishing(true);
       setMessage('');
-      await publishIntent(savedIntent.id, savedIntent.revision);
+      const intent = await saveDraft();
+      if (!intent) return;
+      setMessage(`${platform === 'youtube' ? 'YouTube' : 'VK Video'}: черновик сохранён. Публикация не запускалась.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Не удалось сохранить черновик.');
+    } finally {
+      setPublishing(false);
+    }
+  };
+  const publishNow = async () => {
+    if (publishing) return;
+    try {
+      setPublishing(true);
+      setMessage('');
+      const intent = await saveDraft();
+      if (!intent) return;
+      await publishIntent(intent.id, intent.revision);
       setStatuses(await listPublicationStatus());
       setMessage('Публикация поставлена в очередь.');
     } catch (error) {
@@ -159,7 +197,7 @@ export function PublicationComposer({ readyVideoId }: { readyVideoId?: string })
     <section className="panel" aria-labelledby="publication-composer">
       <div className="panel-header">
         <div><h2 id="publication-composer">Публикация</h2><p>Сохранение черновика никогда не запускает публикацию.</p></div>
-        <span className="badge pending">{videoId ? 'Видео выбрано' : 'Нужно READY видео'}</span>
+        <span className="badge pending">{videoId ? 'Видео готово' : 'Сначала загрузите видео'}</span>
       </div>
       <div className="panel-body composer">
         <div className="card">
@@ -169,7 +207,7 @@ export function PublicationComposer({ readyVideoId }: { readyVideoId?: string })
             <button className={`destination ${platform === 'vk' ? 'active' : ''}`} type="button" onClick={() => selectPlatform('vk')}>VK Video</button>
           </div></fieldset>
           <div className="form-grid" style={{ marginTop: 14 }}>
-            <label className="field wide"><span>Заголовок</span><input maxLength={100} value={title} onChange={(event) => setTitle(event.target.value)} required /></label>
+            <label className="field wide"><span>Заголовок</span><input maxLength={100} value={title} onChange={(event) => { setTitle(event.target.value); setFieldErrors((errors) => ({ ...errors, title: undefined })); }} required />{fieldErrors.title && <span className="field-error" role="alert">{fieldErrors.title}</span>}</label>
             <label className="field wide"><span>Описание</span><textarea maxLength={platform === 'vk' ? 5000 : undefined} value={description} onChange={(event) => setDescription(event.target.value)} /></label>
             {platform === 'vk' && <>
               <label className="field wide"><span>Ссылка в метаданных VK (необязательно)</span><input type="url" maxLength={2048} value={link} onChange={(event) => setLink(event.target.value)} placeholder="https://vk.com/sovara_news" /></label>
@@ -177,18 +215,18 @@ export function PublicationComposer({ readyVideoId }: { readyVideoId?: string })
             </>}
             <label className="field wide"><span>Обложка (необязательно)</span><div className="preview-control"><div className="preview-placeholder">16:9</div><div><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPreview(event.target.files?.[0])} />{preview && <p className="muted">{preview.name}</p>}</div></div></label>
           </div>
-          <div className="actions"><button type="button" onClick={() => void submit()}>Сохранить черновик</button>{savedIntent && <button className="primary" type="button" disabled={publishing} onClick={() => void publishNow()}>{publishing ? 'Публикуем…' : 'Опубликовать сейчас'}</button>}{savedIntent?.preview && <button className="danger" type="button" onClick={() => void removeSavedPreview()}>Удалить обложку</button>}</div>
+          <div className="actions"><button type="button" disabled={publishing} onClick={() => void submit()}>Сохранить черновик</button>{videoId && <button className="primary" type="button" disabled={publishing} onClick={() => void publishNow()}>{publishing ? 'Обрабатываем…' : 'Опубликовать сейчас'}</button>}{savedIntent?.preview && <button className="danger" type="button" onClick={() => void removeSavedPreview()}>Удалить обложку</button>}</div>
           {message && <p className="notice" role="status">{message}</p>}
         </div>
         <aside className="card status-card" aria-labelledby="publication-status">
           <div className="status-head"><div><h3 id="publication-status">Статус публикаций</h3><p>Обновляется каждые 10 секунд.</p></div></div>
           <div className="status-summary"><div className="stat"><span>Готово</span><b>{published}</b></div><div className="stat"><span>В работе</span><b>{publishingCount}</b></div><div className="stat"><span>Ошибки</span><b>{failed}</b></div></div>
-          {statuses.length === 0 ? <p className="notice">Пока нет задач публикации.</p> : <ul className="status-list">{statuses.map((status) => <li className="status-item" key={status.id}><div className="status-top"><span className="provider">{status.platform === 'youtube' ? 'YouTube' : 'VK Video'}</span><span className={`badge ${statusClass(status)}`}>{statusText(status)}</span></div><div className="status-sub">Аккаунт: {status.publishingAccountId}</div>{status.error && <div className="status-detail" role="alert">Причина: {status.error.code}: {status.error.message ?? 'без деталей'}</div>}{status.result && <div className={`status-detail ${status.state === 'published' ? 'success' : ''}`}>{status.result.remoteUrl ? <a href={status.result.remoteUrl}>Открыть опубликованное видео</a> : status.result.remoteMediaId}</div>}{status.state === 'failed' && <div className="actions"><button type="button" onClick={() => void retryFailedPublication(status)}>Повторить публикацию</button></div>}</li>)}</ul>}
+          {statuses.length === 0 ? <p className="notice">Пока нет задач публикации.</p> : <ul className="status-list">{statuses.map((status) => <li className="status-item" key={status.id}><div className="status-top"><span className="provider">{status.platform === 'youtube' ? 'YouTube' : 'VK Video'}</span><span className={`badge ${statusClass(status)}`}>{statusText(status)}</span></div><div className="status-sub">Аккаунт: {accounts.find((account) => account.id === status.publishingAccountId)?.displayName || 'Подключённый аккаунт'}</div>{status.error && <div className="status-detail" role="alert">Причина: {status.error.code}: {status.error.message ?? 'без деталей'}</div>}{status.result && <div className={`status-detail ${status.state === 'published' ? 'success' : ''}`}>{status.result.remoteUrl ? <a href={status.result.remoteUrl}>Открыть опубликованное видео</a> : status.result.remoteMediaId}</div>}{status.state === 'failed' && <div className="actions"><button type="button" onClick={() => void retryFailedPublication(status)}>Повторить публикацию</button></div>}</li>)}</ul>}
         </aside>
       </div>
       <dialog id="studio-settings" aria-labelledby="settings-title"><div className="dialog-head"><h2 id="settings-title">Настройки SOVARA Studio</h2><button type="button" onClick={(event) => event.currentTarget.closest('dialog')?.close()}>Закрыть</button></div><div className="settings-grid">
-        {(['youtube', 'vk'] as const).map((value) => <section className="setting-card" key={value}><h3>{value === 'youtube' ? 'YouTube' : 'VK Video'}</h3><label className="field"><span>Аккаунт</span><div className="account-row"><select aria-label={`Аккаунт ${value === 'youtube' ? 'YouTube' : 'VK'}`} value={platform === value ? accountId : ''} onChange={(event) => { setPlatform(value); setAccountId(event.target.value); }}><option value="">Выберите аккаунт</option>{accountsFor(value).map((account) => <option key={account.id} value={account.id}>{account.displayName ?? account.id}</option>)}</select><button className="connect-button" type="button" onClick={() => void connect(value)}>Подключить</button></div></label></section>)}
-        <section className="setting-card"><h3>Технические данные</h3><label className="field"><span>Ready Video ID</span><input className="technical" value={videoId} onChange={(event) => setVideoId(event.target.value)} placeholder="UUID готового видео" /></label><p className="muted">Автоматически заполняется после готовности только что загруженного видео.</p></section>
+        {(['youtube', 'vk'] as const).map((value) => <section className="setting-card" key={value}><h3>{value === 'youtube' ? 'YouTube' : 'VK Video'}</h3><label className="field"><span>Аккаунт</span><div className="account-row"><select aria-label={`Аккаунт ${value === 'youtube' ? 'YouTube' : 'VK'}`} value={platform === value ? accountId : ''} onChange={(event) => { setPlatform(value); setAccountId(event.target.value); window.localStorage.setItem(accountStorageKey(value), event.target.value); setFieldErrors((errors) => ({ ...errors, account: undefined })); }}><option value="">Выберите аккаунт</option>{accountsFor(value).map((account) => <option key={account.id} value={account.id}>{account.displayName ?? account.id}</option>)}</select><button className="connect-button" type="button" onClick={() => void connect(value)}>Подключить</button></div>{platform === value && fieldErrors.account && <span className="field-error" role="alert">{fieldErrors.account}</span>}</label></section>)}
+        <section className="setting-card"><h3>Технические данные</h3><label className="field"><span>Ready Video ID</span><input className="technical" value={videoId} onChange={(event) => { setVideoId(event.target.value); setFieldErrors((errors) => ({ ...errors, video: undefined })); }} placeholder="UUID готового видео" />{fieldErrors.video && <span className="field-error" role="alert">{fieldErrors.video}</span>}</label><p className="muted">Автоматически заполняется после готовности только что загруженного видео.</p></section>
       </div></dialog>
     </section>
   );

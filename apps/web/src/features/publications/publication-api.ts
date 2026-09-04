@@ -8,6 +8,7 @@ import {
   retryPublicationRequestSchema,
   type CreatePublicationIntentRequest,
   type PublicationStatusResponse,
+  type UpdatePublicationIntentRequest,
 } from '@sovara-studio/contracts';
 import { apiBaseUrl } from '../../env';
 import { notifyUnauthorized } from '../../lib/auth-client';
@@ -38,6 +39,15 @@ export async function createIntent(input: CreatePublicationIntentRequest) {
     credentials: 'same-origin',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(createPublicationIntentRequestSchema.parse(input)),
+  });
+  return publicationIntentResponseSchema.parse(await json(response));
+}
+export async function updateIntent(intentId: string, input: UpdatePublicationIntentRequest) {
+  const response = await fetch(`${apiBaseUrl}/publication-intents/${intentId}`, {
+    method: 'PUT',
+    credentials: 'same-origin',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
   });
   return publicationIntentResponseSchema.parse(await json(response));
 }

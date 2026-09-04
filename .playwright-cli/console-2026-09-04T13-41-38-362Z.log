@@ -7,3 +7,6 @@
 [   62187ms] [LOG] [vite] server connection lost. Polling for restart... @ https://defiantly-moved-snook.cloudpub.ru/@vite/client:559
 [   71467ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ https://defiantly-moved-snook.cloudpub.ru/node_modules/.vite/deps/chunk-U3XUIKGL.js?v=efbcb21a:21550
 [   71725ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://defiantly-moved-snook.cloudpub.ru/:0
+[ 1318215ms] [LOG] [vite] server connection lost. Polling for restart... @ https://defiantly-moved-snook.cloudpub.ru/@vite/client:559
+[ 1322434ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ https://defiantly-moved-snook.cloudpub.ru/:0
+[ 1326662ms] [ERROR] Failed to load resource: the server responded with a status of 502 (Bad Gateway) @ https://defiantly-moved-snook.cloudpub.ru/:0
