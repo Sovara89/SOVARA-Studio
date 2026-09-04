@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SOVARA Studio — Interactive UI Mockup v5</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#070b10;--surface:#0d141d;--surface2:#111925;--panel:#0a1119;--panel2:#09111a;
+  --border:#243247;--border2:#344760;--text:#eef5ff;--muted:#8ea4c2;
+  --cyan:#59d8ff;--cyan2:#9cecff;--orange:#ffa928;--orange2:#ffc35c;
+  --green:#61d990;--yellow:#ffd56f;--red:#ff7078;--shadow:0 18px 55px rgba(0,0,0,.23);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:
+  radial-gradient(circle at 18% -12%,rgba(54,160,214,.09),transparent 31rem),
+  radial-gradient(circle at 90% 10%,rgba(255,169,40,.035),transparent 28rem),
+  var(--bg);color:var(--text);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}
+button{border:1px solid var(--border2);border-radius:9px;min-height:40px;padding:0 15px;background:#101925;color:var(--text);font-weight:800;cursor:pointer}
+button:hover{background:#162131;border-color:#506784}
+button:disabled{opacity:.42;cursor:not-allowed}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:9px;background:#081019;color:var(--text);padding:0 12px;min-height:42px;outline:none}
+textarea{padding-top:10px;min-height:145px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(89,216,255,.09)}
+a{color:var(--cyan);text-decoration:none}
+
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px;padding:10px 18px;border-bottom:1px solid #1a2432;background:rgba(7,11,16,.94);backdrop-filter:blur(12px)}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border-radius:11px;border:1px solid #2e6680;display:grid;place-items:center;background:linear-gradient(145deg,#142c3e,#0b1620 60%,#16243a);color:var(--cyan);font-size:18px;font-weight:1000}
+.brand h1{margin:0;font-size:17px}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.topActions{display:flex;gap:8px;align-items:center}.topActions button{min-height:34px;font-size:12px}
+.settingsBtn{border-color:#2f6b86;color:#dff8ff}
+
+.shell{width:min(1560px,calc(100% - 30px));margin:0 auto;padding:18px 0 44px;display:grid;gap:16px}
+.panel{border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow)}
+.phead{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.phead h2{margin:0;font-size:16px}.phead p{margin:3px 0 0;color:var(--muted);font-size:11px}.pbody{padding:16px}
+.badge{display:inline-flex;align-items:center;min-height:24px;padding:0 9px;border-radius:999px;border:1px solid rgba(97,217,144,.45);background:rgba(97,217,144,.09);color:#95efb5;font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase}
+.badge.blue{border-color:rgba(89,216,255,.42);background:rgba(89,216,255,.08);color:#a8ecff}
+.badge.gray{border-color:var(--border2);background:#111a27;color:#bdcbe0}
+.badge.yellow{border-color:rgba(255,213,111,.45);background:rgba(255,213,111,.08);color:#ffe6a4}
+.badge.red{border-color:rgba(255,112,120,.46);background:rgba(255,112,120,.08);color:#ffb0b6}
+
+/* upload */
+.filebar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:var(--panel2)}
+.filebar .name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:850}
+.filebar .name span{color:var(--muted);font-size:11px;font-weight:500;margin-left:7px}
+.add{border-color:#2d8fb2;color:#dff8ff;background:rgba(89,216,255,.08)}
+.progressBox{margin-top:12px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)}
+.progressTop{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:11px}
+.progressTop strong{font-size:15px}.progressTop span{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.eta{text-align:right}.eta b{display:block;font-size:24px;color:#dff9ff}.eta small{color:var(--muted)}
+.track{height:40px;border:1px solid #1f3145;border-radius:11px;background:#101a27;overflow:hidden;position:relative}
+.fill{height:100%;width:68%;background:linear-gradient(90deg,#258ab4,#46c5ec 58%,#70e3ff);box-shadow:0 0 26px rgba(89,216,255,.25);transition:width .45s ease}
+.percent{position:absolute;inset:0;display:grid;place-items:center;font-weight:950;font-size:15px;text-shadow:0 1px 4px #000}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:11px}
+.stat{padding:10px 11px;border:1px solid #203044;border-radius:9px;background:#0d1621}.stat span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;font-weight:900;letter-spacing:.03em}.stat b{display:block;margin-top:4px;font-size:13px}
+.queue{margin-top:12px;border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--panel2)}
+.queueHead{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;background:#111925;border-bottom:1px solid var(--border)}.queueHead b{font-size:12px}.queueHead span{font-size:11px;color:var(--muted)}
+.qrow{display:grid;grid-template-columns:minmax(0,1.7fr) 120px 180px 125px;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid #182434}
+.qrow:first-of-type{border-top:0}.qrow.active{background:rgba(89,216,255,.045)}
+.qname{min-width:0}.qname b,.qname span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.qname span{color:var(--muted);font-size:11px;margin-top:3px}
+.tinyTrack{height:7px;background:#111d2b;border-radius:999px;overflow:hidden}.tinyFill{height:100%;width:68%;background:linear-gradient(90deg,#288fb8,#59d8ff)}
+.qactions{text-align:right}.qactions button{min-height:30px;padding:0 10px;font-size:11px}
+
+/* publication */
+.composer{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(350px,.72fr);gap:16px}
+.card{border:1px solid var(--border);border-radius:11px;background:var(--panel);padding:14px}.statusCard{padding:0;overflow:hidden}
+.sectionTitle{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}.sectionTitle h3{margin:0;font-size:14px}.sectionTitle span{color:var(--muted);font-size:11px}
+.field{display:grid;gap:7px}.field label{font-size:12px;color:#dce9fa;font-weight:800}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wide{grid-column:1/-1}
+.destinations{display:flex;gap:8px;flex-wrap:wrap}.chip{min-height:36px;border-radius:999px;padding:0 13px;background:#0e1823}.chip.on{border-color:#2d92b6;background:rgba(89,216,255,.11);color:#e0f8ff}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mode{min-height:66px;text-align:left;padding:10px 12px;background:#0c151f}.mode b,.mode span{display:block}.mode span{margin-top:4px;color:var(--muted);font-size:11px;font-weight:500}.mode.active{border-color:#c67a16;background:rgba(255,169,40,.10)}
+.schedule{display:none;grid-template-columns:1fr 1fr;gap:10px;padding:12px;border:1px solid #2a3b51;background:#0b1621;border-radius:10px;margin-top:12px}.schedule.show{display:grid}
+.preview{border:1px solid var(--border);border-radius:10px;background:var(--panel2);padding:12px;display:grid;grid-template-columns:108px 1fr;gap:12px;align-items:center}.thumb{aspect-ratio:16/9;border:1px solid #2f4159;border-radius:8px;background:linear-gradient(135deg,#122235,#0a1118);display:grid;place-items:center;color:var(--muted);font-size:11px}.previewText b{display:block}.previewText span{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.primary{background:var(--orange);border-color:#c67a16;color:#111}.primary:hover{background:var(--orange2)}.danger{border-color:#814048;color:#ffb4b9}
+.notice{margin-top:12px;padding:10px 12px;border:1px solid #2d4057;border-radius:9px;background:#0b1621;color:#b8cce6;font-size:12px}
+.statusHead{padding:13px 14px;border-bottom:1px solid var(--border);background:#111925}.statusHead h3{margin:0;font-size:14px}.statusHead p{margin:4px 0 0;color:var(--muted);font-size:11px}
+.miniStats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 12px 0}.mini{padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--panel2)}.mini span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;font-weight:900}.mini b{display:block;margin-top:4px;font-size:14px}
+.statusList{list-style:none;margin:0;padding:12px;display:grid;gap:10px}.statusItem{padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}.statusTop{display:flex;align-items:center;justify-content:space-between;gap:10px}.provider{font-weight:900}.statusSub{margin-top:7px;color:var(--muted);font-size:11px}.statusDetail{margin-top:9px;font-size:12px;color:#cbdbee}.ok{color:#9ce8b7}
+
+/* storage */
+.storageSummary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}.storageStat{padding:11px 12px;border:1px solid var(--border);border-radius:9px;background:var(--panel2)}.storageStat span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;font-weight:900}.storageStat b{display:block;margin-top:4px;font-size:14px}
+.media{border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--panel2)}.mrow{display:grid;grid-template-columns:minmax(0,1.7fr) 110px 150px 180px 210px;gap:10px;align-items:center;padding:11px 12px;border-top:1px solid #182434}.mrow:first-child{border-top:0;background:#111925;color:#91a7c3;font-size:10px;text-transform:uppercase;font-weight:900}.mname b,.mname span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mname span{color:var(--muted);font-size:11px;margin-top:3px}.mactions{display:flex;gap:6px;justify-content:flex-end}.mactions button{min-height:30px;padding:0 10px;font-size:11px}
+.cleanup{margin-top:12px;padding:12px;border:1px solid #2b4056;border-radius:10px;background:#0b1621;display:flex;align-items:flex-start;gap:10px}.cleanup input{width:auto;min-height:auto;margin-top:3px}.cleanup b{display:block}.cleanup span{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+
+/* settings */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.66);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}.backdrop.open{display:flex}.modal{width:min(920px,100%);max-height:88vh;overflow:auto;border:1px solid #344760;border-radius:14px;background:#0a1119;box-shadow:0 26px 85px rgba(0,0,0,.58)}.modalHead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);background:#111925}.modalHead h3{margin:0}.close{min-height:34px;padding:0 11px}.settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px}.settingCard{padding:13px;border:1px solid var(--border);border-radius:10px;background:var(--panel2)}.settingCard h4{margin:0 0 9px}.accountrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.connect{border-color:#2d8fb2;background:rgba(89,216,255,.1);color:#e0f8ff}.tech{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;color:#b9cbe3}
+.toast{position:fixed;right:18px;bottom:18px;z-index:80;display:none;max-width:360px;padding:12px 14px;border:1px solid #2e5166;border-radius:10px;background:#0d1823;box-shadow:var(--shadow);color:#dff7ff}.toast.show{display:block}
+.footer{color:#617590;font-size:11px;text-align:center}
+
+@media(max-width:1000px){
+  .composer{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.wide{grid-column:auto}
+  .stats,.storageSummary{grid-template-columns:1fr 1fr}.qrow{grid-template-columns:1fr 120px}.qrow>*:nth-child(3){display:none}
+  .modes{grid-template-columns:1fr}.settingsGrid{grid-template-columns:1fr}.mrow{grid-template-columns:1fr 110px 170px}.mrow>*:nth-child(3),.mrow>*:nth-child(4){display:none}
+}
+@media(max-width:650px){
+  .topbar{align-items:flex-start;flex-direction:column}.topActions{width:100%}.topActions button{flex:1}
+  .shell{width:min(100% - 18px,1560px)}.filebar{grid-template-columns:1fr}.progressTop{align-items:flex-start;flex-direction:column}.eta{text-align:left}
+  .stats,.storageSummary{grid-template-columns:1fr 1fr}.qrow{grid-template-columns:1fr}.qrow>*:not(.qname):not(.qactions){display:none}.qactions{text-align:left}
+  .preview{grid-template-columns:1fr}.miniStats{grid-template-columns:1fr}.schedule{grid-template-columns:1fr}.mrow{grid-template-columns:1fr}.mrow>*:not(.mname):not(.mactions){display:none}.mactions{justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">S</div>
+    <div><h1>SOVARA Studio</h1><small>Загрузка, публикация и управление видео</small></div>
+  </div>
+  <div class="topActions">
+    <button class="settingsBtn" onclick="openSettings()">⚙ Настройки</button>
+    <button>Выйти</button>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="panel">
+    <div class="phead">
+      <div><h2>Загрузка видео</h2><p>Добавьте один или несколько файлов. Studio загрузит их и подготовит к публикации.</p></div>
+      <span class="badge blue" id="queueBadge">3 файла</span>
+    </div>
+    <div class="pbody">
+      <div class="filebar">
+        <button>Выбрать файлы</button>
+        <div class="name">Сова 2.mp4 <span>5.80 ГБ</span></div>
+        <button class="add" onclick="addFakeFile()">+ Добавить ещё</button>
+      </div>
+
+      <div class="progressBox">
+        <div class="progressTop">
+          <div><strong id="progressTitle">Сова 2.mp4 загружается</strong><span id="progressSub">Активный файл · следующий начнётся автоматически</span></div>
+          <div class="eta"><b id="etaValue">≈ 1 мин 42 сек</b><small>осталось</small></div>
+        </div>
+        <div class="track"><div class="fill" id="mainFill"></div><div class="percent" id="mainPercent">68%</div></div>
+        <div class="stats">
+          <div class="stat"><span>Загружено</span><b id="uploadedStat">3.94 / 5.80 ГБ</b></div>
+          <div class="stat"><span>Скорость</span><b id="speedStat">38.4 МБ/с</b></div>
+          <div class="stat"><span>Осталось</span><b id="leftStat">1.86 ГБ</b></div>
+          <div class="stat"><span>Этап</span><b id="stageStat">Загрузка частей</b></div>
+        </div>
+      </div>
+
+      <div class="queue" id="uploadQueue">
+        <div class="queueHead"><b>Очередь загрузки</b><span>Нажмите «Настроить», чтобы работать с готовым файлом.</span></div>
+        <div class="qrow active" data-file="Сова 2.mp4">
+          <div class="qname"><b>Сова 2.mp4</b><span>5.80 ГБ · загружается</span></div>
+          <div><div class="tinyTrack"><div class="tinyFill"></div></div></div>
+          <div><span class="badge blue">68%</span></div>
+          <div class="qactions"><button onclick="selectFile('Сова 2.mp4')">Открыть</button></div>
+        </div>
+        <div class="qrow" data-file="ОбедСова.mp4">
+          <div class="qname"><b>ОбедСова.mp4</b><span>2.4 МиБ · готово</span></div>
+          <div><span class="badge">Готово</span></div>
+          <div>Можно публиковать</div>
+          <div class="qactions"><button onclick="selectFile('ОбедСова.mp4')">Настроить</button></div>
+        </div>
+        <div class="qrow" data-file="Ночной рейд.mp4">
+          <div class="qname"><b>Ночной рейд.mp4</b><span>8.1 ГБ · ждёт</span></div>
+          <div><span class="badge gray">В очереди</span></div>
+          <div>Начнётся после текущего</div>
+          <div class="qactions"><button onclick="toast('Файл пока ждёт своей очереди.')">Открыть</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="phead">
+      <div><h2>Публикация</h2><p>Выбран файл: <b id="selectedFile">ОбедСова.mp4</b></p></div>
+      <span class="badge" id="readyBadge">Готово к публикации</span>
+    </div>
+    <div class="pbody">
+      <div class="composer">
+        <div class="card">
+          <div class="sectionTitle"><h3>Что сделать с видео</h3><span>Аккаунты, подключения и технические ID спрятаны в ⚙ Настройки</span></div>
+
+          <div class="field wide">
+            <label>Куда отправить</label>
+            <div class="destinations">
+              <button class="chip on" data-destination="youtube" onclick="toggleChip(this)">✓ YouTube</button>
+              <button class="chip on" data-destination="vk" onclick="toggleChip(this)">✓ VK Video</button>
+            </div>
+          </div>
+
+          <div class="field wide" style="margin-top:14px">
+            <label>Режим работы</label>
+            <div class="modes">
+              <button class="mode" data-mode="upload" onclick="setMode('upload',this)">
+                <b>Только загрузить</b>
+                <span>Studio отправит файл на площадку и дальше не будет его менять.</span>
+              </button>
+              <button class="mode active" data-mode="now" onclick="setMode('now',this)">
+                <b>Опубликовать сейчас</b>
+                <span>Загрузить и сразу запустить публикацию с указанными данными.</span>
+              </button>
+              <button class="mode" data-mode="schedule" onclick="setMode('schedule',this)">
+                <b>Запланировать</b>
+                <span>Studio опубликует видео автоматически в выбранные дату и время.</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="schedule" id="scheduleBox">
+            <div class="field"><label>Дата публикации</label><input type="date" value="2026-09-06"></div>
+            <div class="field"><label>Время</label><input type="time" value="18:00"></div>
+          </div>
+
+          <div class="grid2" style="margin-top:14px">
+            <div class="field wide"><label>Заголовок</label><input id="titleInput" value="SOVARA test"></div>
+            <div class="field wide"><label>Описание</label><textarea id="descriptionInput">Тестовая публикация из SOVARA Studio.</textarea></div>
+            <div class="field wide">
+              <label>Обложка</label>
+              <div class="preview">
+                <div class="thumb">16:9 preview</div>
+                <div class="previewText">
+                  <b>thumbnail-95cd1.png</b>
+                  <span>PNG · можно оставить пустым, если будете дорабатывать видео на площадке вручную.</span>
+                  <div class="actions" style="margin-top:9px">
+                    <button>Выбрать другую</button><button class="danger" onclick="toast('Обложка удалена из черновика.')">Удалить</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button onclick="saveDraft()">Сохранить черновик</button>
+            <button class="primary" id="primaryAction" onclick="runPrimaryAction()">Опубликовать сейчас</button>
+          </div>
+          <div class="notice" id="modeNotice">
+            Studio использует указанные данные и сразу запускает публикацию на выбранные площадки.
+          </div>
+        </div>
+
+        <aside class="card statusCard">
+          <div class="statusHead"><h3>Статус публикаций</h3><p>По выбранному видео и последним задачам.</p></div>
+          <div class="miniStats">
+            <div class="mini"><span>Готово</span><b id="doneCount">2</b></div>
+            <div class="mini"><span>Запланировано</span><b id="scheduledCount">1</b></div>
+            <div class="mini"><span>Ошибки</span><b>0</b></div>
+          </div>
+          <ul class="statusList" id="statusList">
+            <li class="statusItem"><div class="statusTop"><span class="provider">YouTube</span><span class="badge">Загружено</span></div><div class="statusSub">Канал SOVARA</div><div class="statusDetail ok">Видео на площадке · <a href="#">Открыть</a></div></li>
+            <li class="statusItem"><div class="statusTop"><span class="provider">YouTube</span><span class="badge yellow">06.09 · 18:00</span></div><div class="statusSub">Ночной рейд.mp4</div><div class="statusDetail">Публикация запланирована в Studio.</div></li>
+            <li class="statusItem"><div class="statusTop"><span class="provider">VK Video</span><span class="badge gray">Ждёт доступ</span></div><div class="statusSub">Сообщество SOVARA</div><div class="statusDetail">Аккаунт подключён, но право публикации пока ограничено VK.</div></li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="phead">
+      <div><h2>Файлы на сервере</h2><p>Исходники, которые занимают место. История публикаций останется даже после удаления самого файла.</p></div>
+      <span class="badge gray" id="serverFilesBadge">3 файла</span>
+    </div>
+    <div class="pbody">
+      <div class="storageSummary">
+        <div class="storageStat"><span>Занято</span><b id="storageUsed">13.9 ГБ</b></div>
+        <div class="storageStat"><span>Можно удалить</span><b id="deletableCount">2 файла</b></div>
+        <div class="storageStat"><span>Нужны Studio</span><b>1 файл</b></div>
+        <div class="storageStat"><span>Старше 30 дней</span><b>0</b></div>
+      </div>
+
+      <div class="media" id="mediaTable">
+        <div class="mrow"><div>Файл</div><div>Размер</div><div>Состояние</div><div>Публикации</div><div style="text-align:right">Действия</div></div>
+        <div class="mrow" data-server-file="ОбедСова.mp4">
+          <div class="mname"><b>ОбедСова.mp4</b><span>Загружен 4 сентября · исходник больше не нужен для публикации</span></div>
+          <div>2.4 МиБ</div><div><span class="badge">Можно удалить</span></div><div>YouTube: готово</div>
+          <div class="mactions"><button onclick="selectFile('ОбедСова.mp4')">Открыть</button><button class="danger" onclick="deleteServerFile(this,'ОбедСова.mp4')">Удалить с сервера</button></div>
+        </div>
+        <div class="mrow" data-server-file="Сова 2.mp4">
+          <div class="mname"><b>Сова 2.mp4</b><span>Загружен 4 сентября · публикация завершена</span></div>
+          <div>5.8 ГБ</div><div><span class="badge">Можно удалить</span></div><div>YouTube: готово</div>
+          <div class="mactions"><button onclick="selectFile('Сова 2.mp4')">Открыть</button><button class="danger" onclick="deleteServerFile(this,'Сова 2.mp4')">Удалить с сервера</button></div>
+        </div>
+        <div class="mrow" data-server-file="Ночной рейд.mp4">
+          <div class="mname"><b>Ночной рейд.mp4</b><span>Запланирован на 6 сентября, 18:00</span></div>
+          <div>8.1 ГБ</div><div><span class="badge yellow">Хранить</span></div><div>Запланировано</div>
+          <div class="mactions"><button onclick="selectFile('Ночной рейд.mp4')">Открыть</button><button disabled>Удалить</button></div>
+        </div>
+      </div>
+
+      <label class="cleanup">
+        <input type="checkbox" id="autoCleanup" onchange="toast(this.checked?'Автоочистка включена для будущих завершённых задач.':'Автоочистка выключена.')">
+        <span><b>Автоматически удалять исходник после успешной отправки на все выбранные площадки</b>
+        <span>По умолчанию выключено. Studio не удаляет файл, пока есть расписание, активная публикация, повторная попытка или неопределённый результат.</span></span>
+      </label>
+    </div>
+  </section>
+
+  <div class="footer">Интерактивный статический макет · SOVARA Studio v5.1</div>
+</main>
+
+<div class="backdrop" id="settingsBackdrop" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div class="modalHead"><h3>Настройки SOVARA Studio</h3><button class="close" onclick="closeSettings()">Закрыть</button></div>
+    <div class="settingsGrid">
+      <div class="settingCard">
+        <h4>YouTube</h4>
+        <div class="field"><label>Аккаунт</label><div class="accountrow"><select><option>SOVARA</option></select><button class="connect" onclick="toast('Здесь будет OAuth-подключение YouTube.')">Подключить</button></div></div>
+      </div>
+      <div class="settingCard">
+        <h4>VK Video</h4>
+        <div class="field"><label>Аккаунт</label><div class="accountrow"><select><option>Rodion Borkin</option></select><button class="connect" onclick="toast('Здесь будет OAuth-подключение VK.')">Подключить</button></div></div>
+      </div>
+      <div class="settingCard">
+        <h4>Публикация по умолчанию</h4>
+        <div class="field"><label>YouTube</label><select><option>Приватное</option><option>Доступ по ссылке</option><option>Публичное</option></select></div>
+        <div class="field" style="margin-top:8px"><label>Часовой пояс</label><select><option>Europe/Moscow</option></select></div>
+      </div>
+      <div class="settingCard">
+        <h4>Техническое</h4>
+        <div class="field"><label>Ready Video ID</label><input class="tech" value="4cadab0c-c3c0-433a-bd50-6…" disabled></div>
+        <div class="field" style="margin-top:8px"><label>VK Group ID</label><input class="tech" value="146047017" disabled></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let mode = 'now';
+let toastTimer;
+
+function openSettings(){document.getElementById('settingsBackdrop').classList.add('open')}
+function closeSettings(){document.getElementById('settingsBackdrop').classList.remove('open')}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
+}
+function toggleChip(el){
+  el.classList.toggle('on');
+  const name=el.dataset.destination==='youtube'?'YouTube':'VK Video';
+  el.textContent=(el.classList.contains('on')?'✓ ':'')+name;
+}
+function setMode(next,el){
+  mode=next;
+  document.querySelectorAll('.mode').forEach(b=>b.classList.remove('active')); el.classList.add('active');
+  const schedule=document.getElementById('scheduleBox');
+  const primary=document.getElementById('primaryAction');
+  const notice=document.getElementById('modeNotice');
+  schedule.classList.toggle('show',next==='schedule');
+  if(next==='upload'){
+    primary.textContent='Только загрузить';
+    notice.textContent='Studio отправит файл на выбранные площадки и после подтверждённой загрузки больше его не трогает. Дальше можно редактировать и выпускать видео вручную на самой площадке.';
+  } else if(next==='schedule'){
+    primary.textContent='Запланировать публикацию';
+    notice.textContent='Studio сохранит дату и время и запустит публикацию автоматически. Пока публикация не завершена, исходник останется на сервере.';
+  } else {
+    primary.textContent='Опубликовать сейчас';
+    notice.textContent='Studio использует указанные данные и сразу запускает публикацию на выбранные площадки.';
+  }
+}
+function saveDraft(){toast('Черновик сохранён. Публикация не запущена.')}
+function runPrimaryAction(){
+  const list=document.getElementById('statusList');
+  const file=document.getElementById('selectedFile').textContent;
+  let badge='В очереди', detail='Задача создана и ждёт worker.', cls='badge blue';
+  if(mode==='upload'){badge='Загрузка';detail='Studio отправит файл и остановится после успешной загрузки.';}
+  if(mode==='schedule'){badge='06.09 · 18:00';detail='Публикация сохранена в расписании.';cls='badge yellow';}
+  const item=document.createElement('li');
+  item.className='statusItem';
+  item.innerHTML=`<div class="statusTop"><span class="provider">YouTube</span><span class="${cls}">${badge}</span></div><div class="statusSub">${file}</div><div class="statusDetail">${detail}</div>`;
+  list.prepend(item);
+  if(mode==='schedule'){document.getElementById('scheduledCount').textContent=String(Number(document.getElementById('scheduledCount').textContent)+1)}
+  toast(mode==='upload'?'Задача «Только загрузить» создана.':mode==='schedule'?'Публикация добавлена в расписание.':'Публикация запущена.');
+}
+function selectFile(name){
+  document.getElementById('selectedFile').textContent=name;
+  document.querySelectorAll('.qrow').forEach(r=>r.classList.toggle('active',r.dataset.file===name));
+  document.querySelector('.panel:nth-of-type(2)').scrollIntoView({behavior:'smooth',block:'start'});
+  toast('Выбран файл: '+name);
+}
+function addFakeFile(){
+  const q=document.getElementById('uploadQueue');
+  const row=document.createElement('div'); row.className='qrow'; row.dataset.file='Новый ролик.mp4';
+  row.innerHTML=`<div class="qname"><b>Новый ролик.mp4</b><span>3.2 ГБ · ждёт</span></div><div><span class="badge gray">В очереди</span></div><div>Начнётся позже</div><div class="qactions"><button class="demo-open">Открыть</button></div>`;
+  row.querySelector('.demo-open').addEventListener('click',()=>toast('Файл добавлен в очередь.'));
+  q.appendChild(row);
+  document.getElementById('queueBadge').textContent='4 файла';
+  toast('Демо: файл добавлен в очередь.');
+}
+function deleteServerFile(btn,name){
+  if(!confirm('Удалить исходный файл «'+name+'» с сервера? История публикаций останется.')) return;
+  const row=btn.closest('.mrow'); row.remove();
+  const left=document.querySelectorAll('[data-server-file]').length;
+  document.getElementById('serverFilesBadge').textContent=left+' файла';
+  document.getElementById('deletableCount').textContent=Math.max(0,left-1)+' файла';
+  toast('Исходник удалён с сервера. История публикаций сохранена.');
+}
+</script>
+</body>
+</html>

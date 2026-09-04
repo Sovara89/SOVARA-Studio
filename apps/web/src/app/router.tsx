@@ -3,9 +3,9 @@ import { UploadPage } from '../features/uploads/UploadPage';
 
 const rootRoute = createRootRoute({
   component: () => (
-    <main>
+    <div className="app-route">
       <Outlet />
-    </main>
+    </div>
   ),
 });
 const indexRoute = createRoute({

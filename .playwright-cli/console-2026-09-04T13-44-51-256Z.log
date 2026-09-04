@@ -1,0 +1,14 @@
+[    6288ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ https://defiantly-moved-snook.cloudpub.ru/node_modules/.vite/deps/chunk-U3XUIKGL.js?v=efbcb21a:21550
+[    6450ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ https://defiantly-moved-snook.cloudpub.ru/favicon.ico:0
+[    6535ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://defiantly-moved-snook.cloudpub.ru/:0
+[   33600ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ https://defiantly-moved-snook.cloudpub.ru/node_modules/.vite/deps/chunk-U3XUIKGL.js?v=efbcb21a:21550
+[   82575ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ https://defiantly-moved-snook.cloudpub.ru/api/videos:0
+[   83865ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ https://defiantly-moved-snook.cloudpub.ru/api/publication-status:0
+[   95928ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ https://defiantly-moved-snook.cloudpub.ru/api/publication-status:0
+[  105881ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ https://defiantly-moved-snook.cloudpub.ru/api/publication-status:0
+[  115927ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ https://defiantly-moved-snook.cloudpub.ru/api/publication-status:0
+[  123861ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ https://defiantly-moved-snook.cloudpub.ru/api/publication-status:0
+[  135915ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ https://defiantly-moved-snook.cloudpub.ru/api/publication-status:0
+[  209412ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ https://defiantly-moved-snook.cloudpub.ru/node_modules/.vite/deps/chunk-U3XUIKGL.js?v=efbcb21a:21550
+[  321708ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ https://defiantly-moved-snook.cloudpub.ru/api/publication-status:0
+[  321817ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://defiantly-moved-snook.cloudpub.ru/:0

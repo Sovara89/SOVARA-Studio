@@ -58,4 +58,5 @@ describe('Better Auth Fastify bridge', () => {
     expect(called).toBe(false);
     await server.close();
   });
+
 });

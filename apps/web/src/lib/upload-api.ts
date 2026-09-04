@@ -6,6 +6,7 @@ import type {
   UploadErrorCode,
 } from '@sovara-studio/contracts';
 import { apiBaseUrl } from '../env';
+import { notifyUnauthorized } from './auth-client';
 
 export class UploadApiError extends Error {
   constructor(
@@ -143,6 +144,7 @@ async function requestWithOptions<T>(
       ...(init.headers ?? {}),
     },
   });
+  notifyUnauthorized(response);
   const body = await readJson(response);
   if (!acceptedStatuses.includes(response.status)) throw errorFromResponse(response.status, body);
   try {

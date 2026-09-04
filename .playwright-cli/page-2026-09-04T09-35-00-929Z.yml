@@ -1,0 +1,38 @@
+- generic [ref=f1e2]:
+  - button "Выйти" [ref=f1e3]
+  - main [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - heading "SOVARA Studio" [level=1] [ref=f1e6]
+      - generic [ref=f1e7]:
+        - text: Choose or drop a video file
+        - button "Choose or drop a video file" [ref=f1e8]
+      - region [ref=f1e9]:
+        - heading "Publication composer" [level=2] [ref=f1e10]
+        - paragraph [ref=f1e11]: Only READY video IDs can be saved. Saving an intent never starts a publication.
+        - generic [ref=f1e12]:
+          - text: Ready video ID
+          - textbox "Ready video ID" [ref=f1e13]
+        - generic [ref=f1e14]:
+          - text: Platform
+          - combobox "Platform" [ref=f1e15]:
+            - option "YouTube" [selected]
+            - option "VK Video"
+        - generic [ref=f1e16]:
+          - text: Account
+          - combobox "Account" [ref=f1e17]:
+            - option "Select account" [selected]
+        - button "Подключить YouTube" [active] [ref=f1e18]
+        - generic [ref=f1e19]:
+          - text: Title
+          - textbox "Title" [ref=f1e20]
+        - generic [ref=f1e21]:
+          - text: Description
+          - textbox "Description" [ref=f1e22]
+        - generic [ref=f1e23]:
+          - text: Private preview
+          - button "Private preview" [ref=f1e24]
+        - button "Save draft" [ref=f1e25]
+        - region [ref=f1e26]:
+          - heading "Publication status" [level=3] [ref=f1e27]
+          - paragraph [ref=f1e28]: Updates every 10 seconds. Statuses are grouped by platform and publishing account.
+          - paragraph [ref=f1e29]: No publication jobs yet.

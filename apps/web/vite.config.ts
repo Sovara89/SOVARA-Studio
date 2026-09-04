@@ -13,5 +13,16 @@ export default defineConfig({
       },
     },
   },
-  server: { port: 5173, proxy: { '/api': 'http://localhost:3000' } },
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    proxy: {
+      '/api': 'http://localhost:3000',
+      '/sovara-uploads': { target: 'http://localhost:19000', changeOrigin: false },
+    },
+    allowedHosts: [
+      new URL(process.env.APP_ORIGIN ?? 'http://localhost:5173').hostname,
+      'defiantly-moved-snook.cloudpub.ru',
+    ],
+  },
 });

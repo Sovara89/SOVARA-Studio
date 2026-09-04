@@ -1,0 +1,15 @@
+{
+	# HTTPS is served only on 443; TLS-ALPN validation also uses 443.
+	auto_https disable_redirects
+}
+
+https://sovarastudio.sovara.crazedns.ru {
+	# Caddy forwards Origin and Referer unchanged by default.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3000
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:5173
+	}
+}

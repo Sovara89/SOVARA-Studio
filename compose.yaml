@@ -35,7 +35,7 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:5173,http://localhost:18080
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:5173,http://localhost:18080,https://defiantly-moved-snook.cloudpub.ru
       MINIO_API_STALE_UPLOADS_CLEANUP_INTERVAL: 6h
       MINIO_API_STALE_UPLOADS_EXPIRY: 48h
     ports:
@@ -69,7 +69,7 @@ services:
     environment:
       DATABASE_URL: postgres://sovara_runtime:sovara_runtime@postgres:5432/sovara
       AUTH_SECRET: local-compose-auth-secret-that-is-at-least-32-bytes
-      APP_ORIGIN: http://localhost:18080
+      APP_ORIGIN: ${APP_ORIGIN}
       CREDENTIAL_ENCRYPTION_KEYS: '{"local":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
       CREDENTIAL_ENCRYPTION_ACTIVE_KEY_ID: local
       YOUTUBE_CLIENT_ID:
@@ -79,7 +79,7 @@ services:
       VK_SERVICE_TOKEN:
       VK_REDIRECT_URI:
       S3_ENDPOINT: http://minio:9000
-      S3_PRESIGN_ENDPOINT: http://localhost:19000
+      S3_PRESIGN_ENDPOINT: ${S3_PRESIGN_ENDPOINT:-http://localhost:19000}
       S3_REGION: us-east-1
       S3_ACCESS_KEY_ID: minioadmin
       S3_SECRET_ACCESS_KEY: minioadmin

@@ -1,0 +1,11 @@
+- main [ref=e3]:
+  - heading "SOVARA Studio" [level=1] [ref=e4]
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - text: Email
+      - textbox "Email" [ref=e7]: keendns-auth-check-20260904@local.test
+    - generic [ref=e8]:
+      - text: Password
+      - textbox "Password" [ref=e9]: keendns-auth-check-password-2026
+    - button "Войти" [active] [ref=e10]
+    - alert [ref=e12]: Missing or null Origin

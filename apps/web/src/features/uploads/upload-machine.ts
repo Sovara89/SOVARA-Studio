@@ -7,6 +7,8 @@ export type UploadPhase =
   | 'paused'
   | 'retry_wait'
   | 'all_parts_recorded'
+  | 'completing'
+  | 'ready'
   | 'aborting'
   | 'cleanup_pending'
   | 'aborted'
@@ -64,6 +66,8 @@ export type UploadMachineAction =
   | { type: 'part_recording'; partNumber: number; attempt: number }
   | { type: 'part_recorded'; partNumber: number; sizeBytes: number; attempt: number }
   | { type: 'all_parts_recorded' }
+  | { type: 'completing' }
+  | { type: 'ready' }
   | { type: 'retry_wait'; partNumber: number; attempt: number; delayMs: number }
   | { type: 'paused' }
   | { type: 'aborting' }
@@ -155,6 +159,10 @@ export function uploadMachineReducer(
     }
     case 'all_parts_recorded':
       return { ...state, phase: 'all_parts_recorded', inFlightBytes: {} };
+    case 'completing':
+      return { ...state, phase: 'completing', inFlightBytes: {}, error: undefined };
+    case 'ready':
+      return { ...state, phase: 'ready', inFlightBytes: {}, error: undefined };
     case 'retry_wait': {
       const part = state.parts[action.partNumber];
       if (!part) return state;

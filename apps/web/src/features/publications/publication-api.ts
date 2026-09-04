@@ -10,6 +10,7 @@ import {
   type PublicationStatusResponse,
 } from '@sovara-studio/contracts';
 import { apiBaseUrl } from '../../env';
+import { notifyUnauthorized } from '../../lib/auth-client';
 export type { PublicationStatusResponse } from '@sovara-studio/contracts';
 export type PublishingAccount = {
   id: string;
@@ -18,6 +19,7 @@ export type PublishingAccount = {
   status: string;
 };
 async function json(response: Response) {
+  notifyUnauthorized(response);
   const body = await response.json().catch(() => undefined);
   if (!response.ok)
     throw new Error(
@@ -38,6 +40,20 @@ export async function createIntent(input: CreatePublicationIntentRequest) {
     body: JSON.stringify(createPublicationIntentRequestSchema.parse(input)),
   });
   return publicationIntentResponseSchema.parse(await json(response));
+}
+export async function startYouTubeOAuth() {
+  return json(
+    await fetch(`${apiBaseUrl}/publishing-accounts/youtube/oauth/start`, {
+      credentials: 'same-origin',
+    }),
+  ) as Promise<{ authorizationUrl: string }>;
+}
+export async function startVkOAuth() {
+  return json(
+    await fetch(`${apiBaseUrl}/publishing-accounts/vk/oauth/start`, {
+      credentials: 'same-origin',
+    }),
+  ) as Promise<{ authorizationUrl: string }>;
 }
 export async function publishIntent(intentId: string, revision: number) {
   const response = await fetch(`${apiBaseUrl}/publication-intents/${intentId}/publish`, {

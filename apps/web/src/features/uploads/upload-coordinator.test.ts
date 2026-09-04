@@ -90,6 +90,16 @@ describe('UploadCoordinator', () => {
           revision: 0,
         }),
       ),
+      complete: vi.fn(async () => ({
+        videoId: status.videoId,
+        uploadId: status.uploadId,
+        uploadState: 'completed',
+        uploadRevision: 1,
+        videoState: 'ready',
+        videoRevision: 1,
+        outcome: 'ready',
+        retryable: false,
+      })),
       abort: vi.fn(),
     };
     const transport = vi.fn(async ({ body }: { body: Blob }) => {
@@ -109,7 +119,8 @@ describe('UploadCoordinator', () => {
     await coordinator.start(new File([new Uint8Array(12)], 'video.mp4'));
     expect(peak).toBeLessThanOrEqual(2);
     expect(api.recordPart).toHaveBeenCalledTimes(3);
-    expect(coordinator.getState().phase).toBe('all_parts_recorded');
+    expect(api.complete).toHaveBeenCalledWith(status.videoId, status.uploadId, status.revision);
+    expect(coordinator.getState().phase).toBe('ready');
   });
 
   test('pause while signing discards the URL before slicing or PUT', async () => {

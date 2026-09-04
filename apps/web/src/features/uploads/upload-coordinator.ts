@@ -361,7 +361,7 @@ export class UploadCoordinator {
       .map((part) => part.partNumber);
     if (missing.length === 0) {
       if (this.runningGeneration === runGeneration) this.runningGeneration = null;
-      this.dispatchAction({ type: 'all_parts_recorded' });
+      await this.complete(status, runGeneration);
       return;
     }
     const concurrency = Math.max(
@@ -379,14 +379,26 @@ export class UploadCoordinator {
     };
     try {
       await Promise.all(Array.from({ length: concurrency }, () => worker()));
-      if (!this.isCancelled(runGeneration) && !this.fatal)
-        this.dispatchAction({ type: 'all_parts_recorded' });
+      if (!this.isCancelled(runGeneration) && !this.fatal) await this.complete(status, runGeneration);
     } catch (error) {
       if (!(error instanceof CancelledError) && this.isCurrentGeneration(runGeneration))
         this.handleFailure(error);
     } finally {
       signer.clear();
       if (this.runningGeneration === runGeneration) this.runningGeneration = null;
+    }
+  }
+
+  private async complete(status: UploadStatusResponse, runGeneration: number) {
+    this.dispatchAction({ type: 'all_parts_recorded' });
+    if (this.isCancelled(runGeneration)) return;
+    this.dispatchAction({ type: 'completing' });
+    const result = await this.api.complete(status.videoId, status.uploadId, status.revision);
+    this.assertCurrent(runGeneration);
+    if (result.outcome === 'ready') {
+      this.sessions.clear();
+      this.session = null;
+      this.dispatchAction({ type: 'ready' });
     }
   }
 

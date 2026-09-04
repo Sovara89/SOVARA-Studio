@@ -1,0 +1,1 @@
+[     567ms] [ERROR] {message: referer is not the app base domain, code: invalid_origin, additional_data: Array(0)} @ https://static.vk.ru/vkid/1.1.1406/authorize.js:1
