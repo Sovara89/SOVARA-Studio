@@ -26,6 +26,19 @@ function dependencies(
 }
 
 describe('publication reconciler', () => {
+  test('logs reconciliation only when it queues or recovers work', async () => {
+    const log = vi.fn();
+    const empty = dependencies(new Map());
+    empty.log = log;
+    await createPublicationReconciler(empty).reconcileOnce();
+    expect(log).not.toHaveBeenCalled();
+
+    const active = dependencies(new Map([['youtube', { executeAfterRequestSent: vi.fn() }]]));
+    active.log = log;
+    await createPublicationReconciler(active).reconcileOnce();
+    expect(log).toHaveBeenCalledWith('reconciliation_completed', { queued: 1, recovered: 0 });
+  });
+
   test('does not enqueue unsupported platforms', async () => {
     const input = dependencies(new Map());
     const result = await createPublicationReconciler(input).reconcileOnce();

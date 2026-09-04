@@ -13,10 +13,7 @@ import {
   updateIntent,
   uploadPreview,
 } from './publication-api';
-
-export function vkMetadataLinkForSave(value: string): string | null {
-  return value.trim() || null;
-}
+import { vkMetadataLinkForSave } from './publication-form';
 
 const accountStorageKey = (platform: 'youtube' | 'vk') => `sovara-studio:publishing-account:${platform}`;
 

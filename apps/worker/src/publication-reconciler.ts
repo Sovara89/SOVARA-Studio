@@ -41,7 +41,6 @@ export function createPublicationReconciler(dependencies: PublicationReconcilerD
     running = true;
     let queued = 0;
     let recovered = 0;
-    log('reconciliation_started', {});
     try {
       const expired = await dependencies.publications.listExpiredPublicationLeases(
         dependencies.batchSize,
@@ -106,7 +105,7 @@ export function createPublicationReconciler(dependencies: PublicationReconcilerD
         await dependencies.queue.ensurePublicationJob(payload);
         queued += 1;
       }
-      log('reconciliation_completed', { queued, recovered });
+      if (queued || recovered) log('reconciliation_completed', { queued, recovered });
       return { queued, recovered };
     } finally {
       running = false;

@@ -16,7 +16,7 @@ export async function publicationStatusRoutes(
   fastify: FastifyInstance,
   options: { service: Service; appOrigin: string },
 ) {
-  fastify.get('/publication-status', { preHandler: fastify.requireStudioUser }, async (request) =>
+  fastify.get('/publication-status', { logLevel: 'warn', preHandler: fastify.requireStudioUser }, async (request) =>
     options.service.list(request.studioAuth!.userId),
   );
   fastify.post(

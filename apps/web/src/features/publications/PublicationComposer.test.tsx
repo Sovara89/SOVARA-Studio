@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import '../../test/setup';
-import { PublicationComposer, vkMetadataLinkForSave } from './PublicationComposer';
+import { PublicationComposer } from './PublicationComposer';
 import { createIntent, listAccounts, listPublicationStatus, publishIntent, retryPublication, startVkOAuth, startYouTubeOAuth, updateIntent } from './publication-api';
 
 vi.mock('./publication-api', () => ({ createIntent: vi.fn(), listAccounts: vi.fn(), listPublicationStatus: vi.fn(), removePreview: vi.fn(), retryPublication: vi.fn(), uploadPreview: vi.fn(), publishIntent: vi.fn(), startVkOAuth: vi.fn(), startYouTubeOAuth: vi.fn(), updateIntent: vi.fn() }));
@@ -39,10 +39,6 @@ describe('PublicationComposer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить черновик' }));
     await waitFor(() => expect(createIntent).toHaveBeenCalledWith(expect.objectContaining({ link: null, mode: 'DRAFT' })));
     expect(screen.getByText(/Публикация не запускалась/)).toBeInTheDocument();
-  });
-
-  test('maps blank-only link input to a persisted clear', () => {
-    expect(vkMetadataLinkForSave('  ')).toBeNull();
   });
 
   test('uses the just-uploaded ready video ID in technical settings', async () => {
